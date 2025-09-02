@@ -1,0 +1,19 @@
+# Dependencias para ambos módulos del proyecto
+
+# Usado para leer y manipular PDFs
+pymupdf
+
+# Usado para leer archivos CSV
+pandas
+
+# Usado para desencriptar PDFs protegidos
+pikepdf
+
+# Usado para generar nombres falsos en el entorno de pruebas
+Faker
+
+# Usado para empaquetar la aplicación en un ejecutable (.exe)
+pyinstaller
+
+# Requerido por pandas para leer archivos de Excel (.xlsx)
+openpyxl

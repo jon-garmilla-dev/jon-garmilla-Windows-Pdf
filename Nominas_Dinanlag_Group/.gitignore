@@ -1,0 +1,24 @@
+# Archivos de configuración sensibles
+settings.ini
+config.py
+
+# Directorios de construcción de PyInstaller
+/dist/
+/build/
+*.spec
+
+# Archivos de datos y PDFs generados
+*.pdf
+*.csv
+*.xlsx
+*.xls
+
+# Directorio de nóminas individuales temporales
+/2_Aplicacion_Envio_Nominas/nominas_individuales/
+
+# Caché de Python
+__pycache__/
+*.pyc
+
+# Archivos de entorno de desarrollo
+.env
