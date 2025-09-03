@@ -8,9 +8,8 @@ TEMPLATE_FILE = 'settings_template.ini'
 
 try:
     from logic.security import (
-        encrypt_sensitive_config, 
-        decrypt_sensitive_config, 
-        is_first_run, 
+        encrypt_sensitive_config,
+        decrypt_sensitive_config,
         create_default_config
     )
     ENCRYPTION_AVAILABLE = True
@@ -53,6 +52,15 @@ def load_settings():
         config['Carpetas'] = {'salida': 'nominas_individuales'}
     if 'PDF' not in config:
         config['PDF'] = {'password_autor': ''}
+    if 'Formato' not in config:
+        config['Formato'] = {
+            'archivo_nomina': '{nombre}_{apellidos}_Nomina_{mes}_{año}.pdf'
+        }
+    if 'UltimosArchivos' not in config:
+        config['UltimosArchivos'] = {
+            'pdf_maestro': '',
+            'excel_empleados': ''
+        }
     
     # Descifrar si está disponible
     if ENCRYPTION_AVAILABLE:
@@ -67,7 +75,7 @@ def save_settings(config):
     if os.path.exists(SETTINGS_FILE):
         try:
             shutil.copy(SETTINGS_FILE, SETTINGS_FILE + '.backup')
-        except:
+        except OSError:
             pass  # Fallar silenciosamente si no se puede hacer backup
     
     try:
@@ -91,7 +99,7 @@ def save_settings(config):
     if os.path.exists(SETTINGS_FILE + '.backup'):
         try:
             os.remove(SETTINGS_FILE + '.backup')
-        except:
+        except OSError:
             pass
 
 
@@ -100,12 +108,12 @@ def reset_settings():
     if os.path.exists(SETTINGS_FILE):
         try:
             os.remove(SETTINGS_FILE)
-        except:
+        except OSError:
             pass
     
     # Limpiar archivo de clave si existe
     if ENCRYPTION_AVAILABLE and os.path.exists('.secret_key'):
         try:
             os.remove('.secret_key')
-        except:
+        except OSError:
             pass

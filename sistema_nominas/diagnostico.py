@@ -11,17 +11,17 @@ import platform
 
 def check_python_version():
     """Verifica la versión de Python"""
-    print(f"🐍 Python: {sys.version}")
+    print(f"Python: {sys.version}")
     if sys.version_info < (3, 9):
-        print("⚠️  ADVERTENCIA: Se recomienda Python 3.9 o superior")
+        print("WARNING: Se recomienda Python 3.9 o superior")
     else:
-        print("✅ Versión de Python OK")
+        print("OK - Versión de Python OK")
 
 def check_system_info():
     """Información del sistema"""
-    print(f"💻 Sistema: {platform.system()} {platform.release()}")
-    print(f"🏗️  Arquitectura: {platform.machine()}")
-    print(f"🔧 Plataforma: {sys.platform}")
+    print(f"Sistema: {platform.system()} {platform.release()}")
+    print(f"Arquitectura: {platform.machine()}")
+    print(f"Plataforma: {sys.platform}")
 
 def check_tkinter():
     """Verifica tkinter"""
@@ -30,58 +30,58 @@ def check_tkinter():
         root = tk.Tk()
         root.withdraw()  # No mostrar ventana
         root.destroy()
-        print("✅ tkinter: Disponible y funcional")
+        print("OK - tkinter: Disponible y funcional")
     except Exception as e:
-        print(f"❌ tkinter: Error - {e}")
+        print(f"ERROR - tkinter: Error - {e}")
         if sys.platform.startswith('linux'):
-            print("💡 Intente: sudo apt-get install python3-tk")
+            print("CONSEJO: Intente: sudo apt-get install python3-tk")
 
 def check_pil():
     """Verifica PIL/Pillow"""
     try:
         from PIL import Image, ImageTk
-        print("✅ PIL/Pillow: Disponible")
+        print("OK - PIL/Pillow: Disponible")
         
         # Probar crear imagen simple
         img = Image.new('RGB', (100, 100), color='red')
-        print("✅ PIL: Creación de imágenes OK")
+        print("OK - PIL: Creación de imágenes OK")
         
         # Probar ImageTk
         photo = ImageTk.PhotoImage(img)
-        print("✅ ImageTk: Conversión para tkinter OK")
+        print("OK - ImageTk: Conversión para tkinter OK")
         
     except ImportError as e:
-        print(f"❌ PIL/Pillow: No instalado - {e}")
+        print(f"ERROR - PIL/Pillow: No instalado - {e}")
         if sys.platform.startswith('linux'):
-            print("💡 Intente: sudo apt-get install python3-pil python3-pil.imagetk")
-            print("💡 O: pip install Pillow")
+            print("CONSEJO: Intente: sudo apt-get install python3-pil python3-pil.imagetk")
+            print("CONSEJO: O: pip install Pillow")
     except Exception as e:
-        print(f"⚠️  PIL/Pillow: Instalado pero con errores - {e}")
+        print(f"WARNING - PIL/Pillow: Instalado pero con errores - {e}")
 
 def check_pdf_libraries():
     """Verifica librerías de PDF"""
     try:
         import fitz
-        print(f"✅ PyMuPDF: {fitz.version[0]} disponible")
+        print(f"OK - PyMuPDF: {fitz.version[0]} disponible")
     except ImportError:
-        print("❌ PyMuPDF: No instalado")
-        print("💡 Intente: pip install pymupdf")
+        print("ERROR - PyMuPDF: No instalado")
+        print("CONSEJO: Intente: pip install pymupdf")
     
     try:
         import pikepdf
-        print("✅ pikepdf: Disponible para encriptación")
+        print("OK - pikepdf: Disponible para encriptación")
     except ImportError:
-        print("❌ pikepdf: No instalado")
-        print("💡 Intente: pip install pikepdf")
+        print("ERROR - pikepdf: No instalado")
+        print("CONSEJO: Intente: pip install pikepdf")
 
 def check_pdf_viewers():
     """Verifica visores de PDF disponibles"""
     if sys.platform == "win32":
-        print("🖥️  Windows: Usando asociaciones de archivo del sistema")
+        print("Windows: Usando asociaciones de archivo del sistema")
     elif sys.platform == "darwin":
-        print("🍎 macOS: Usando 'open' del sistema")
+        print("macOS: Usando 'open' del sistema")
     else:
-        print("🐧 Linux: Verificando visores de PDF...")
+        print("Linux: Verificando visores de PDF...")
         viewers = ['xdg-open', 'evince', 'okular', 'zathura', 'mupdf', 'firefox']
         found_viewers = []
         
@@ -94,48 +94,48 @@ def check_pdf_viewers():
                 pass
         
         if found_viewers:
-            print(f"✅ Visores encontrados: {', '.join(found_viewers)}")
+            print(f"OK - Visores encontrados: {', '.join(found_viewers)}")
         else:
-            print("❌ No se encontraron visores de PDF")
-            print("💡 Instale uno: sudo apt-get install evince")
+            print("ERROR - No se encontraron visores de PDF")
+            print("CONSEJO: Instale uno: sudo apt-get install evince")
 
 def check_shell_environment():
     """Verifica el entorno de shell"""
     try:
         result = subprocess.run(['echo', 'test'], capture_output=True, text=True, timeout=2)
         if result.returncode == 0:
-            print("✅ Subprocess: Funcionando correctamente")
+            print("OK - Subprocess: Funcionando correctamente")
         else:
-            print("⚠️  Subprocess: Problemas detectados")
+            print("WARNING - Subprocess: Problemas detectados")
     except Exception as e:
-        print(f"❌ Subprocess: Error - {e}")
+        print(f"ERROR - Subprocess: Error - {e}")
 
 def main():
     print("=" * 60)
-    print("🔧 DIAGNÓSTICO - Asistente de Envío de Nóminas")
+    print("DIAGNÓSTICO - Gestor de Nóminas")
     print("=" * 60)
     print()
     
-    print("📋 INFORMACIÓN DEL SISTEMA")
+    print("INFORMACIÓN DEL SISTEMA")
     print("-" * 30)
     check_python_version()
     check_system_info()
     print()
     
-    print("📚 LIBRERÍAS PRINCIPALES")  
+    print("LIBRERÍAS PRINCIPALES")  
     print("-" * 30)
     check_tkinter()
     check_pil()
     check_pdf_libraries()
     print()
     
-    print("🖥️  FUNCIONALIDADES EXTERNAS")
+    print("FUNCIONALIDADES EXTERNAS")
     print("-" * 30)
     check_pdf_viewers()
     check_shell_environment()
     print()
     
-    print("📝 RECOMENDACIONES")
+    print("RECOMENDACIONES")
     print("-" * 30)
     
     if sys.platform.startswith('linux'):
@@ -154,7 +154,7 @@ def main():
         print("2. Preview viene preinstalado como visor PDF")
     
     print()
-    print("✨ Diagnóstico completado!")
+    print("Diagnóstico completado!")
     print("Si persisten los errores, comparta esta salida con soporte técnico.")
 
 if __name__ == "__main__":

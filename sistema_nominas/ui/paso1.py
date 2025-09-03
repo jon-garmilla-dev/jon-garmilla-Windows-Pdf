@@ -44,9 +44,12 @@ class Paso1(tk.Frame):
         
         # Información del archivo
         self.pdf_summary_label = tk.Label(
-            pdf_selector_frame, text="Seleccione un archivo PDF con nóminas",
-            font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#000080", justify="left"
-        )
+            pdf_selector_frame,
+            text="Seleccione un archivo PDF con nóminas",
+            font=("MS Sans Serif", 8),
+            bg="#f0f0f0",
+            fg="#000080",
+            justify="left")
         self.pdf_summary_label.grid(row=1, column=0, columnspan=2, sticky="w", pady=(8, 0))
 
         # --- Sección de Datos de Empleados ---
@@ -76,9 +79,12 @@ class Paso1(tk.Frame):
         
         # Información del archivo
         self.employee_summary_label = tk.Label(
-            employee_selector_frame, text="Seleccione un archivo CSV o Excel con datos de empleados",
-            font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#000080", justify="left"
-        )
+            employee_selector_frame,
+            text="Seleccione un archivo CSV o Excel con datos de empleados",
+            font=("MS Sans Serif", 8),
+            bg="#f0f0f0",
+            fg="#000080",
+            justify="left")
         self.employee_summary_label.grid(row=1, column=0, columnspan=2, sticky="w", pady=(8, 0))
 
         # --- Frame para Vista Previa y Mapeo (inicialmente oculto) ---
@@ -173,14 +179,17 @@ class Paso1(tk.Frame):
         self.actualizar_visibilidad_detalles()
 
     def seleccionar_pdf(self):
-        # Usar última ruta guardada si existe
-        inicial_dir = self.controller.config.get('UltimosArchivos', 'pdf_maestro', fallback=self.controller.last_dir)
+        inicial_dir = self.controller.config.get(
+            'UltimosArchivos',
+            'pdf_maestro',
+            fallback=self.controller.last_dir)
         if inicial_dir and os.path.exists(os.path.dirname(inicial_dir)):
             inicial_dir = os.path.dirname(inicial_dir)
         else:
             inicial_dir = self.controller.last_dir
             
-        path = filedialog.askopenfilename(
+        path = self.controller.show_centered_filedialog(
+            'openfilename',
             title="Seleccionar PDF Maestro",
             filetypes=[("Archivos PDF", "*.pdf")],
             initialdir=inicial_dir
@@ -203,14 +212,17 @@ class Paso1(tk.Frame):
             self.verificar_estado()
 
     def seleccionar_empleados(self):
-        # Usar última ruta guardada si existe
-        inicial_dir = self.controller.config.get('UltimosArchivos', 'excel_empleados', fallback=self.controller.last_dir)
+        inicial_dir = self.controller.config.get(
+            'UltimosArchivos',
+            'excel_empleados',
+            fallback=self.controller.last_dir)
         if inicial_dir and os.path.exists(os.path.dirname(inicial_dir)):
             inicial_dir = os.path.dirname(inicial_dir)
         else:
             inicial_dir = self.controller.last_dir
             
-        path = filedialog.askopenfilename(
+        path = self.controller.show_centered_filedialog(
+            'openfilename',
             title="Seleccionar Archivo de Empleados",
             filetypes=[
                 ("Archivos Excel", "*.xlsx *.xls"),
@@ -263,8 +275,13 @@ class Paso1(tk.Frame):
         for field, info in detecciones_finales.items():
             if field in self.controller.mapa_columnas:
                 self.controller.mapa_columnas[field].set(info['columna'])
-                # TODO: Mostrar nivel de confianza en UI (futuro)
-                print(f"🎯 Auto-detectado {field.upper()}: '{info['columna']}' (confianza: {info['confianza']}%)")
+                # Actualizar el combobox visualmente
+                if field in self.combos:
+                    self.combos[field].set(info['columna'])
+                print(
+                    f"AUTO-DETECTADO {field.upper()}: '{info['columna']}' "
+                    f"(confianza: {info['confianza']}%)"
+                )
     
     def _analizar_candidatos_columnas(self):
         """Analiza todas las columnas y genera candidatos con niveles de confianza"""
@@ -300,14 +317,14 @@ class Paso1(tk.Frame):
                 ('familia', 60)         # Genérico
             ],
             'email': [
-                ('dirección de correo electrónico', 98),  # Formato oficial español
-                ('direccion de correo electronico', 95), # Sin tildes
-                ('correo electrónico', 90),               # Versión corta
-                ('correo electronico', 88),               # Sin tildes  
-                ('email', 80),                            # Internacional
-                ('mail', 75),                             # Corto
-                ('correo', 70)                            # Muy genérico
-            ]
+                ('dirección de correo electrónico', 98),
+                ('direccion de correo electronico', 95),
+                ('correo electrónico', 90),
+                ('correo electronico', 88),
+                ('email', 80),
+                ('mail', 75),
+                ('correo', 70),
+            ],
         }
         
         # Analizar cada columna disponible
@@ -318,10 +335,11 @@ class Paso1(tk.Frame):
             for campo, patrones in patrones_confianza.items():
                 for patron, confianza_base in patrones:
                     if patron in columna_lower:
-                        # Calcular confianza final considerando factores adicionales
                         confianza_final = self._calcular_confianza_contextual(
-                            columna_lower, patron, confianza_base, campo
-                        )
+                            columna_lower,
+                            patron,
+                            confianza_base,
+                            campo)
                         
                         candidatos[campo].append({
                             'columna': columna_original,
@@ -365,25 +383,33 @@ class Paso1(tk.Frame):
         return max(0, min(100, confianza))
     
     def _resolver_conflictos_deteccion(self, candidatos):
-        """Resuelve conflictos eligiendo el candidato con mayor confianza para cada campo"""
+        """Resuelve conflictos eligiendo el candidato con mayor confianza."""
         detecciones_finales = {}
-        
-        for campo, lista_candidatos in candidatos.items():
-            if lista_candidatos:
-                # Ordenar por confianza (mayor a menor)
-                lista_candidatos.sort(key=lambda x: x['confianza'], reverse=True)
-                mejor_candidato = lista_candidatos[0]
-                
-                # Solo aceptar si la confianza es razonable (>= 50%)
-                if mejor_candidato['confianza'] >= 50:
-                    detecciones_finales[campo] = mejor_candidato
-                    
-                    # Debug: mostrar todos los candidatos considerados
-                    print(f"📊 Campo {campo.upper()}:")
-                    for candidato in lista_candidatos[:3]:  # Top 3
-                        marca = "✅" if candidato == mejor_candidato else "  "
-                        print(f"  {marca} '{candidato['columna']}' ({candidato['confianza']}%)")
-        
+        columnas_usadas = set()
+
+        campos_prioridad = ['nif', 'email', 'apellidos', 'nombre']
+
+        for campo in campos_prioridad:
+            lista_candidatos = candidatos[campo]
+            if not lista_candidatos:
+                continue
+
+            lista_candidatos.sort(
+                key=lambda x: (x['confianza'], len(x['patron_detectado'])),
+                reverse=True)
+
+            for candidato in lista_candidatos:
+                if candidato['columna'] not in columnas_usadas:
+                    if candidato['confianza'] >= 50:
+                        detecciones_finales[campo] = candidato
+                        columnas_usadas.add(candidato['columna'])
+                        break
+
+        for campo, info in detecciones_finales.items():
+            print(
+                f"Campo {campo.upper()}: "
+                f"OK '{info['columna']}' ({info['confianza']}%)")
+
         return detecciones_finales
 
     def actualizar_visibilidad_detalles(self):
@@ -398,13 +424,13 @@ class Paso1(tk.Frame):
             try:
                 doc = fitz.open(pdf_path)
                 self.pdf_summary_label.config(
-                    text=f"✓ Archivo válido: {doc.page_count} páginas encontradas",
+                    text=f"OK - Archivo válido: {doc.page_count} páginas encontradas",
                     fg="#008000"
                 )
                 doc.close()
             except Exception as e:
                 self.pdf_summary_label.config(
-                    text=f"✗ Error al leer el archivo: {str(e)[:50]}...",
+                    text=f"ERROR - Error al leer el archivo: {str(e)[:50]}...",
                     fg="#800000"
                 )
 
@@ -414,15 +440,13 @@ class Paso1(tk.Frame):
             try:
                 df = leer_archivo_empleados(empleados_path)
                 self.employee_summary_label.config(
-                    text=f"✓ Archivo válido: {len(df)} empleados encontrados",
-                    fg="#008000"
-                )
+                    text=f"OK - Archivo válido: {len(df)} empleados encontrados",
+                    fg="#008000")
                 self.actualizar_vista_previa(df)
             except Exception as e:
                 self.employee_summary_label.config(
-                    text=f"✗ Error al leer el archivo: {str(e)[:50]}...",
-                    fg="#800000"
-                )
+                    text=f"ERROR - Error al leer el archivo: {str(e)[:50]}...",
+                    fg="#800000")
 
     def actualizar_vista_previa(self, df):
         self.preview_tree.delete(*self.preview_tree.get_children())
@@ -461,7 +485,7 @@ class Paso1(tk.Frame):
         )
         
         if "error" in res:
-            messagebox.showerror("Error de Análisis", res["error"])
+            self.controller.show_centered_messagebox("error", "Error de Análisis", res["error"])
             return
             
         self.controller.tareas_verificacion = res["tareas"]

@@ -1,147 +1,133 @@
-# 📧 Asistente de Envío de Nóminas v2.0
+# Gestor de Nóminas
 
-**Aplicación de escritorio profesional para procesar y enviar nóminas de forma masiva y segura.**
+Aplicación de escritorio profesional para procesar y enviar nóminas de forma masiva y segura.
 
-## 🌟 Características Principales
+## Características Principales
 
-- ✅ **Interfaz gráfica intuitiva** estilo Windows clásico
-- 🔐 **Credenciales cifradas automáticamente** para máxima seguridad  
-- 👁️ **Previsualizador de PDFs** integrado para verificación visual
-- 🛠️ **Corrección manual** de datos con validación inteligente
-- 📊 **Estadísticas en tiempo real** del proceso de envío
-- 🎯 **Diseñado para usuarios no técnicos** con ayuda contextual
+- **Procesamiento masivo**: Gestiona múltiples empleados simultáneamente
+- **Validación automática**: Verifica datos antes del envío
+- **Envío seguro**: Encriptación de PDFs con contraseñas personalizadas
+- **Interfaz intuitiva**: Diseño paso a paso para facilitar el uso
+- **Respaldo automático**: Backup antes de realizar cambios
+- **Informes detallados**: Seguimiento completo del proceso de envío
 
-## 📋 Requisitos del Sistema
+## Requisitos del Sistema
 
-- **Sistema Operativo**: Windows 10/11, macOS, o Linux
-- **Python**: 3.9 o superior (solo para desarrollo)
-- **Memoria RAM**: 4GB mínimo recomendado
-- **Espacio en disco**: 100MB para la aplicación + espacio para PDFs
+### Software Necesario
+- Python 3.9 o superior
+- Tkinter (incluido en la mayoría de instalaciones Python)
+- Dependencias especificadas en `requirements.txt`
 
-## 🚀 Instalación y Uso
+### Sistemas Operativos Soportados
+- Windows 10/11
+- macOS 10.14+
+- Linux (Ubuntu, Debian, CentOS, etc.)
 
-### Opción A: Ejecutable (Recomendado)
-1. Descargue `EnviarNominas.exe` de la carpeta `dist/`
-2. Ejecute el archivo directamente
-3. La aplicación se abrirá automáticamente
+## Instalación
 
-### Opción B: Desde Código Fuente
+1. **Clonar el repositorio**
+   ```bash
+   git clone [URL_DEL_REPOSITORIO]
+   cd Pdf-Manipulation-Test
+   ```
+
+2. **Crear entorno virtual** (recomendado)
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Linux/Mac
+   # o
+   venv\Scripts\activate     # Windows
+   ```
+
+3. **Instalar dependencias**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Ejecutar la aplicación**
+   ```bash
+   python sistema_nominas/main.py
+   ```
+
+## Uso de la Aplicación
+
+### Paso 1: Selección de Archivos
+- Seleccione el archivo PDF maestro con las nóminas
+- Elija el archivo Excel/CSV con los datos de empleados
+- Configure el mapeo de columnas (automático en la mayoría de casos)
+
+### Paso 2: Verificación de Datos
+- Revise la lista de empleados y sus datos
+- Corrija cualquier error detectado automáticamente
+- Valide que toda la información está completa
+
+### Paso 3: Envío de Correos
+- Configure los parámetros de correo electrónico
+- Revise la configuración antes del envío
+- Inicie el proceso de envío masivo
+
+## Configuración
+
+La aplicación utiliza un archivo `settings.ini` para almacenar:
+- Configuración de servidor de correo
+- Últimos archivos utilizados
+- Preferencias de usuario
+
+## Estructura del Proyecto
+
+```
+sistema_nominas/
+├── main.py              # Punto de entrada de la aplicación
+├── logic/               # Lógica de negocio
+│   ├── file_handler.py  # Manejo de archivos
+│   ├── email_sender.py  # Envío de correos
+│   └── settings.py      # Configuración
+├── ui/                  # Interfaz de usuario
+│   ├── main_window.py   # Ventana principal
+│   ├── paso1.py         # Selección de archivos
+│   ├── paso2.py         # Verificación
+│   └── paso3.py         # Envío
+└── employee_data/       # Datos de ejemplo y utilidades
+```
+
+## Solución de Problemas
+
+### Error: "ModuleNotFoundError"
+Asegúrese de que todas las dependencias estén instaladas:
 ```bash
-# 1. Instalar dependencias
 pip install -r requirements.txt
-
-# 2. Ejecutar aplicación
-cd sistema_nominas
-python main.py
 ```
 
-## 📖 Guía Rápida de Uso
-
-### 1️⃣ **Configuración Inicial**
-- Al abrir por primera vez, vaya a **"Configuración"**
-- Configure su email y contraseña de aplicación
-- Configure la contraseña de edición de PDFs
-- ¡Las credenciales se cifran automáticamente!
-
-### 2️⃣ **Paso 1: Selección de Archivos**
-- **PDF de Nóminas**: Archivo con todas las nóminas
-- **Datos de Empleados**: Archivo Excel/CSV con NIF, nombres y emails
-- La aplicación detecta automáticamente las columnas
-
-### 3️⃣ **Paso 2: Verificación**
-- Revise los datos extraídos automáticamente
-- ✅ Verde = Listo para envío
-- ❌ Rojo = Requiere corrección
-- **Doble clic** para corregir con previsualizador
-
-### 4️⃣ **Paso 3: Envío**
-- Confirme el envío masivo
-- Vea el progreso en tiempo real
-- Estadísticas finales al completar
-
-## 🔧 Construcción del Ejecutable
-
-Para crear un nuevo ejecutable desde el código:
-
+### Error: "tkinter no encontrado"
+En Linux, instale tkinter:
 ```bash
-# Usando Docker (recomendado para consistencia)
-cd Nominas_Dinanlag_Group
-docker run --rm -v "$(pwd):/app" -w /app python:3.9 sh -c "apt-get update && apt-get install -y tk-dev binutils && pip install -r requirements.txt && python build.py"
-
-# O localmente si tiene Python configurado
-pip install -r requirements.txt
-python build.py
+sudo apt-get install python3-tk
 ```
 
-El ejecutable se generará en `dist/EnviarNominas.exe`
-
-## 📁 Estructura del Proyecto
-
-```
-Nominas_Dinanlag_Group/
-├── sistema_nominas/               # Aplicación principal
-│   ├── main.py                     # Punto de entrada
-│   ├── ui/                         # Interfaz gráfica
-│   │   ├── main_window.py          # Ventana principal
-│   │   ├── paso1.py               # Selección archivos
-│   │   ├── paso2.py               # Verificación + Preview
-│   │   ├── paso3.py               # Envío
-│   │   ├── paso_ajustes.py        # Configuración
-│   │   └── paso_completado.py     # Resumen final
-│   └── logic/                      # Lógica de negocio
-│       ├── email_sender.py         # Envío de correos
-│       ├── file_handler.py         # Procesamiento archivos
-│       ├── settings.py             # Configuración
-│       └── security.py             # Cifrado credenciales
-├── development_tools/             # Herramientas de desarrollo y testing
-├── requirements.txt                # Dependencias
-├── build.py                       # Script construcción
-├── SECURITY.md                    # Documentación seguridad
-└── README.md                      # Este archivo
+### Problemas con PDFs
+Verifique que PyMuPDF esté correctamente instalado:
+```bash
+pip install pymupdf
 ```
 
-## 🔒 Seguridad
+## Diagnóstico del Sistema
 
-- **Credenciales cifradas** con clave única por instalación
-- **Contraseñas de PDFs** protegidas automáticamente  
-- **Backup automático** de configuración
-- **Sin exposición de datos** en logs o archivos temporales
+Use el script de diagnóstico para verificar la configuración:
+```bash
+python sistema_nominas/diagnostico.py
+```
 
-Ver [SECURITY.md](SECURITY.md) para más detalles.
+## Seguridad
 
-## 🆘 Solución de Problemas
+- Los PDFs se encriptan antes del envío
+- Las contraseñas se generan de forma segura
+- No se almacenan credenciales en texto plano
+- Logs detallados para auditoría
 
-### "Error al enviar correos"
-- Verifique su conexión a internet
-- Confirme que el email y contraseña son correctos
-- Para Gmail, use contraseña de aplicación
+## Soporte
 
-### "No se puede abrir PDF"
-- Verifique que el archivo no esté corrupto
-- Asegúrese de tener permisos de lectura
-- Use "Ver PDF Completo" para diagnosticar
+Para reportar problemas o solicitar nuevas funcionalidades, consulte la documentación técnica en `sistema_nominas/README.md` o contacte al administrador del sistema.
 
-### "Datos no encontrados"
-- Revise que las columnas estén bien asignadas
-- Verifique formato del archivo de empleados
-- Use el botón "Volver a Verificar"
+## Licencia
 
-## 👥 Para Equipos IT
-
-- **Logging**: Los logs se almacenan automáticamente
-- **Configuración centralizada**: Archivo `settings.ini` cifrado
-- **Deployment**: Ejecutable portátil sin instalación
-- **Backup**: Sistema automático de respaldo de configuración
-
-## 📞 Soporte
-
-Para problemas técnicos o consultas:
-- Consulte la documentación en cada pantalla
-- Use el botón "¿Necesita Ayuda?" en la aplicación
-- Revise los archivos de configuración en caso de errores
-
----
-
-**Versión:** 2.0  
-**Última actualización:** Septiembre 2025  
-**Compatibilidad:** Windows, macOS, Linux
+Este proyecto es de uso interno. Todos los derechos reservados.

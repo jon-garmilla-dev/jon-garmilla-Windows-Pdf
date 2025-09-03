@@ -84,7 +84,7 @@ class Paso2(tk.Frame):
         
         # Indicadores de estado
         tk.Label(
-            ayuda_grid, text="✅ OK:",
+            ayuda_grid, text="[OK]:",
             font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0", fg="#008000"
         ).grid(row=0, column=0, sticky="w", padx=(0, 5))
         tk.Label(
@@ -93,7 +93,7 @@ class Paso2(tk.Frame):
         ).grid(row=0, column=1, sticky="w")
         
         tk.Label(
-            ayuda_grid, text="❌ ERROR:",
+            ayuda_grid, text="[ERROR]:",
             font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0", fg="#800000"
         ).grid(row=1, column=0, sticky="w", padx=(0, 5), pady=(5, 0))
         tk.Label(
@@ -102,7 +102,7 @@ class Paso2(tk.Frame):
         ).grid(row=1, column=1, sticky="w", pady=(5, 0))
         
         tk.Label(
-            ayuda_grid, text="⚠️ ADVERTENCIA:",
+            ayuda_grid, text="[ADVERTENCIA]:",
             font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0", fg="#B8860B"
         ).grid(row=2, column=0, sticky="w", padx=(0, 5), pady=(5, 0))
         tk.Label(
@@ -279,13 +279,13 @@ class Paso2(tk.Frame):
                 status = tarea["status"]
             
             # Determinar estilo y contar (solo UNA vez por tarea)
-            if status.startswith("✅"):
+            if status.startswith("[OK]"):
                 status_tag = 'ok'
                 ok_count += 1
-            elif status.startswith("❌"):
+            elif status.startswith("[ERROR]"):
                 status_tag = 'error'
                 error_count += 1
-            elif status.startswith("⚠️"):
+            elif status.startswith("[ADVERTENCIA]"):
                 status_tag = 'warning' 
                 warning_count += 1
             else:
@@ -574,7 +574,7 @@ class Paso2(tk.Frame):
                 "nombre": var_nombre.get().strip(),
                 "apellidos": var_apellidos.get().strip(),
                 "email": var_email.get().strip(),
-                "status": "✅ OK (Corregido manualmente)"
+                "status": "[OK] Corregido manualmente"
             }
             
             ventana.destroy()
@@ -765,7 +765,7 @@ class Paso2(tk.Frame):
         
         # Título y explicación
         tk.Label(
-            ventana_error, text="⚠️ No se pudo abrir el PDF",
+            ventana_error, text="[ERROR] No se pudo abrir el PDF",
             font=("MS Sans Serif", 12, "bold"), bg="#f0f0f0", fg="#800000"
         ).pack(pady=10)
         
@@ -889,9 +889,9 @@ GUÍA RÁPIDA - VERIFICACIÓN DE DATOS
 • Cada fila representa una nómina individual
 
 Estados posibles:
-✅ OK: Los datos están completos y listos para enviar
-❌ ERROR: Faltan datos importantes, necesita corrección
-⚠️ ADVERTENCIA: Revise manualmente los datos
+[OK]: Los datos están completos y listos para enviar
+[ERROR]: Faltan datos importantes, necesita corrección
+[ADVERTENCIA]: Revise manualmente los datos
 
 ¿Cómo ver las nóminas?
 • Use "Ver PDF Completo" para abrir todo el archivo
@@ -949,6 +949,6 @@ Contacte con soporte técnico o consulte el manual de usuario.
                         tarea[key] = value
                 # Si fue corregido manualmente, marcarlo como OK
                 if correcciones.get("status"):
-                    tarea["status"] = "✅ OK"
+                    tarea["status"] = "[OK]"
         
         self.controller.mostrar_frame("Paso3")

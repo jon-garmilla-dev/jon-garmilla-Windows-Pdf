@@ -57,7 +57,7 @@ sistema_nominas/
 ## 🔧 Componentes Técnicos
 
 ### Gestión de Estado
-- **Controller principal**: `AsistenteNominas` en `main_window.py`
+- **Controller principal**: `GestorNominasApp` en `main_window.py`
 - **Variables compartidas**: `pdf_path`, `empleados_path`, `mapa_columnas`
 - **Datos de verificación**: `tareas_verificacion` para todo el flujo
 

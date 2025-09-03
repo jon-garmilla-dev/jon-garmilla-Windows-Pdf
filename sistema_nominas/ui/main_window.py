@@ -8,13 +8,20 @@ from ui.paso_ajustes import PasoAjustes
 from ui.paso_completado import PasoCompletado
 
 
-class AsistenteNominas(tk.Tk):
+class GestorNominasApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Asistente de Envío de Nóminas v2.0")
-        self.geometry("1100x700")
-        self.minsize(900, 600)
+        self.withdraw()  # Ocultar la ventana principal al inicio
+        self.title("Gestor-De-Nominas-App")
+        self.geometry("1200x800")
+        self.minsize(1000, 700)
         self.configure(bg="#f0f0f0")  # Fondo gris claro estilo Windows
+        
+        # Centrar la ventana en la pantalla
+        self.center_window()
+        
+        # Mostrar splash screen
+        self._show_splash()
         
         self.config = load_settings()
 
@@ -33,6 +40,91 @@ class AsistenteNominas(tk.Tk):
 
         self._crear_widgets()
         self.mostrar_frame("Paso1")
+
+        # Manejar el cierre de la ventana
+        self.protocol("WM_DELETE_WINDOW", self._on_closing)
+        
+        # Ocultar splash y mostrar ventana principal después de la inicialización
+        self.after(1500, self._hide_splash_show_main)
+
+    def center_window(self):
+        """Centra la ventana en la pantalla principal."""
+        self.update_idletasks()
+        width = 1200
+        height = 800
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+        self.geometry(f'{width}x{height}+{x}+{y}')
+    
+    def _show_splash(self):
+        """Muestra la splash screen."""
+        from ui.splash_screen import SplashScreen
+        self.splash = SplashScreen(self)
+        self.splash.transient(self)  # Hace que la splash sea hija de la ventana principal
+        self.splash.grab_set()  # Hace que la splash sea modal
+    
+    def _hide_splash_show_main(self):
+        """Oculta la splash screen y muestra la ventana principal."""
+        if hasattr(self, 'splash'):
+            self.splash.destroy()
+        self.deiconify()
+    
+    def center_dialog(self, dialog_window):
+        """Centra un diálogo sobre la ventana principal."""
+        dialog_window.transient(self)
+        dialog_window.grab_set()
+        self.update_idletasks()
+        dialog_window.update_idletasks()
+        
+        # Obtener dimensiones de la ventana principal
+        main_x = self.winfo_x()
+        main_y = self.winfo_y()
+        main_width = self.winfo_width()
+        main_height = self.winfo_height()
+        
+        # Obtener dimensiones del diálogo
+        dialog_width = dialog_window.winfo_width()
+        dialog_height = dialog_window.winfo_height()
+        
+        # Calcular posición centrada
+        x = main_x + (main_width // 2) - (dialog_width // 2)
+        y = main_y + (main_height // 2) - (dialog_height // 2)
+        
+        dialog_window.geometry(f'+{x}+{y}')
+    
+    def show_centered_messagebox(self, msg_type, title, message, **kwargs):
+        """Muestra un messagebox centrado sobre la ventana principal."""
+        from tkinter import messagebox
+        # Asegurar que el parent sea esta ventana
+        kwargs['parent'] = self
+        
+        if msg_type == 'info':
+            return messagebox.showinfo(title, message, **kwargs)
+        elif msg_type == 'warning':
+            return messagebox.showwarning(title, message, **kwargs)
+        elif msg_type == 'error':
+            return messagebox.showerror(title, message, **kwargs)
+        elif msg_type == 'yesno':
+            return messagebox.askyesno(title, message, **kwargs)
+        elif msg_type == 'okcancel':
+            return messagebox.askokcancel(title, message, **kwargs)
+    
+    def show_centered_filedialog(self, dialog_type, **kwargs):
+        """Muestra un filedialog centrado sobre la ventana principal."""
+        from tkinter import filedialog
+        # Asegurar que el parent sea esta ventana
+        kwargs['parent'] = self
+        
+        if dialog_type == 'openfilename':
+            return filedialog.askopenfilename(**kwargs)
+        elif dialog_type == 'saveasfilename':
+            return filedialog.asksaveasfilename(**kwargs)
+        elif dialog_type == 'askdirectory':
+            return filedialog.askdirectory(**kwargs)
+    
+    def _on_closing(self):
+        """Maneja el evento de cierre de la ventana."""
+        self.destroy()
 
     def _crear_widgets(self):
         # Contenedor principal con estilo Windows
@@ -54,21 +146,21 @@ class AsistenteNominas(tk.Tk):
         # Botones de pasos estilo Windows clásico
         self.pasos_labels = {
             "Paso1": tk.Label(
-                panel_lateral, text="1. Selección de Archivos", bg="#e8e8e8",
-                anchor="w", font=("MS Sans Serif", 9), fg="#000000", 
-                relief="flat", padx=12, pady=6),
+                panel_lateral, text="1. Selección de Archivos",
+                bg="#e8e8e8", anchor="w", font=("MS Sans Serif", 9),
+                fg="#000000", relief="flat", padx=12, pady=6),
             "Paso2": tk.Label(
-                panel_lateral, text="2. Verificación de Datos", bg="#e8e8e8",
-                anchor="w", font=("MS Sans Serif", 9), fg="#000000",
-                relief="flat", padx=12, pady=6),
+                panel_lateral, text="2. Verificación de Datos",
+                bg="#e8e8e8", anchor="w", font=("MS Sans Serif", 9),
+                fg="#000000", relief="flat", padx=12, pady=6),
             "Paso3": tk.Label(
-                panel_lateral, text="3. Envío de Correos", bg="#e8e8e8",
-                anchor="w", font=("MS Sans Serif", 9), fg="#000000",
-                relief="flat", padx=12, pady=6),
+                panel_lateral, text="3. Envío de Correos",
+                bg="#e8e8e8", anchor="w", font=("MS Sans Serif", 9),
+                fg="#000000", relief="flat", padx=12, pady=6),
             "PasoAjustes": tk.Label(
-                panel_lateral, text="Configuración", bg="#e8e8e8",
-                anchor="w", font=("MS Sans Serif", 9), fg="#000000",
-                relief="flat", padx=12, pady=6)
+                panel_lateral, text="Configuración",
+                bg="#e8e8e8", anchor="w", font=("MS Sans Serif", 9),
+                fg="#000000", relief="flat", padx=12, pady=6)
         }
         
         # Separador entre pasos normales y configuración
@@ -90,8 +182,8 @@ class AsistenteNominas(tk.Tk):
             label.bind("<Enter>", lambda e: self._on_hover_enter(e.widget))
             label.bind("<Leave>", lambda e: self._on_hover_leave(e.widget))
 
-        # Contenedor para los pasos (frames) con borde estilo Windows
-        container_frame = tk.Frame(main_frame, bg="#f0f0f0", relief="ridge", bd=2)
+        container_frame = tk.Frame(
+            main_frame, bg="#f0f0f0", relief="ridge", bd=2)
         container_frame.pack(side="right", fill="both", expand=True)
         
         self.container = tk.Frame(container_frame, bg="#f0f0f0")
@@ -130,10 +222,14 @@ class AsistenteNominas(tk.Tk):
             is_active = (name == page_name)
             if is_active:
                 # Estilo seleccionado estilo Windows
-                label.config(font=("MS Sans Serif", 9, "bold"), bg="#316ac5", fg="#ffffff")
+                label.config(
+                    font=("MS Sans Serif", 9, "bold"),
+                    bg="#316ac5", fg="#ffffff")
             else:
                 # Estilo normal
-                label.config(font=("MS Sans Serif", 9, "normal"), bg="#e8e8e8", fg="#000000")
+                label.config(
+                    font=("MS Sans Serif", 9, "normal"),
+                    bg="#e8e8e8", fg="#000000")
         
         frame = self.frames[page_name]
         frame.tkraise()
@@ -176,14 +272,14 @@ class AsistenteNominas(tk.Tk):
         if page_name == "Paso2":
             if not self.pdf_path.get() or not self.empleados_path.get():
                 from tkinter import messagebox
-                messagebox.showwarning(
+                self.show_centered_messagebox(
+                    "warning",
                     "Paso Incompleto",
                     "Debe completar la selección de archivos en el Paso 1\n"
-                    "antes de continuar a la verificación de datos."
-                )
+                    "antes de continuar a la verificación de datos.")
                 return False
-            # También verificar que las columnas estén mapeadas (apellidos es opcional)
-            campos_requeridos = ["nif", "nombre", "email"]
+            # También verificar que las columnas estén mapeadas (todos los campos son obligatorios)
+            campos_requeridos = ["nif", "nombre", "apellidos", "email"]
             campos_faltantes = []
             for campo in campos_requeridos:
                 if not self.mapa_columnas[campo].get():
@@ -191,22 +287,23 @@ class AsistenteNominas(tk.Tk):
             
             if campos_faltantes:
                 from tkinter import messagebox
-                messagebox.showwarning(
-                    "Configuración Incompleta", 
-                    f"Debe asignar estas columnas en el Paso 1:\n{', '.join(campos_faltantes)}\n\n"
-                    "Nota: APELLIDOS es opcional"
-                )
+                self.show_centered_messagebox(
+                    "warning",
+                    "Configuración Incompleta",
+                    f"Debe asignar estas columnas en el Paso 1:\n"
+                    f"{', '.join(campos_faltantes)}\n\n"
+                    "Todos los campos son obligatorios.")
                 return False
         
-        # Para paso 3: necesita verificación completada
         if page_name == "Paso3":
-            if not hasattr(self, 'tareas_verificacion') or not self.tareas_verificacion:
+            if not hasattr(self, 'tareas_verificacion') or \
+               not self.tareas_verificacion:
                 from tkinter import messagebox
-                messagebox.showwarning(
+                self.show_centered_messagebox(
+                    "warning",
                     "Verificación Incompleta",
                     "Debe completar la verificación de datos en el Paso 2\n"
-                    "antes de continuar al envío de correos."
-                )
+                    "antes de continuar al envío de correos.")
                 return False
                 
         return True

@@ -1,10 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-import os
 import threading
 import smtplib
 from logic.settings import save_settings
-from logic.formato_archivos import generar_ejemplo_archivo, validar_plantilla
+from logic.formato_archivos import generar_ejemplo_archivo
 
 
 class ToolTipButton:
@@ -33,11 +32,11 @@ class ToolTipButton:
         tw.wm_overrideredirect(True)
         tw.wm_geometry("+%d+%d" % (x, y))
         
-        # Mismo estilo que los tooltips originales
-        label = tk.Label(tw, text=self.text, justify=tk.LEFT,
-                        background="#ffffe0", relief=tk.SOLID, borderwidth=1,
-                        font=("MS Sans Serif", 8, "normal"), wraplength=300,
-                        padx=8, pady=6)
+        label = tk.Label(
+            tw, text=self.text, justify=tk.LEFT,
+            background="#ffffe0", relief=tk.SOLID, borderwidth=1,
+            font=("MS Sans Serif", 8, "normal"), wraplength=300,
+            padx=8, pady=6)
         label.pack()
         
         # Eventos para cerrar el tooltip cuando se sale con el cursor
@@ -55,10 +54,9 @@ class ToolTipButton:
             if hasattr(self, 'auto_hide_id') and self.auto_hide_id:
                 try:
                     tw.after_cancel(self.auto_hide_id)
-                except:
+                except tk.TclError:
                     pass
             tw.destroy()
-
 
 
 class PasoAjustes(tk.Frame):
@@ -71,14 +69,11 @@ class PasoAjustes(tk.Frame):
         titulo_frame.pack(fill="x", pady=(0, 20))
         
         tk.Label(
-            titulo_frame, text="Configuración del Sistema",
-            font=("MS Sans Serif", 14, "bold"), bg="#f0f0f0", fg="#000000"
-        ).pack(anchor="w")
-        
-        tk.Label(
-            titulo_frame, text="Configure los parámetros de envío de correo electrónico y carpetas de trabajo.",
-            font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#404040"
-        ).pack(anchor="w", pady=(5, 0))
+            titulo_frame,
+            text="Configuración del Sistema",
+            font=("MS Sans Serif", 14, "bold"),
+            bg="#f0f0f0",
+            fg="#000000").pack(anchor="w")
 
         # Crear notebook para las pestañas
         self.notebook = ttk.Notebook(self, style="Modern.TNotebook")
@@ -112,7 +107,7 @@ class PasoAjustes(tk.Frame):
     def _crear_pestaña_email(self):
         """Crea la pestaña de configuración de email."""
         frame_email = ttk.Frame(self.notebook, style="Modern.TFrame")
-        self.notebook.add(frame_email, text="📧 Email")
+        self.notebook.add(frame_email, text="Email")
         
         # Configuración SMTP
         smtp_group = tk.LabelFrame(
@@ -128,7 +123,10 @@ class PasoAjustes(tk.Frame):
         
         self.servidor_entry = tk.Entry(smtp_group, width=35, font=("MS Sans Serif", 8))
         self.servidor_entry.grid(row=0, column=1, sticky="ew", pady=5)
-        self.servidor_entry.insert(0, self.controller.config.get('SMTP', 'servidor', fallback='smtp.gmail.com'))
+        self.servidor_entry.insert(
+            0,
+            self.controller.config.get(
+                'SMTP', 'servidor', fallback='smtp.gmail.com'))
         
         # Puerto
         tk.Label(smtp_group, text="Puerto:", font=("Segoe UI", 9), bg="#f8f9fa").grid(
@@ -154,8 +152,10 @@ class PasoAjustes(tk.Frame):
             row=0, column=0, sticky="w", pady=8, padx=12)
         
         self.email_entry = tk.Entry(cred_group, width=40, font=("MS Sans Serif", 8))
-        self.email_entry.grid(row=0, column=1, sticky="ew", pady=8, padx=(0, 12), columnspan=2)
-        self.email_entry.insert(0, self.controller.config.get('Email', 'email_origen', fallback=''))
+        self.email_entry.grid(
+            row=0, column=1, sticky="ew", pady=8, padx=(0, 12), columnspan=2)
+        self.email_entry.insert(
+            0, self.controller.config.get('Email', 'email_origen', fallback=''))
         
         # Contraseña
         tk.Label(cred_group, text="Contraseña:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
@@ -163,10 +163,11 @@ class PasoAjustes(tk.Frame):
         
         self.password_entry = tk.Entry(cred_group, width=25, font=("MS Sans Serif", 8), show="*")
         self.password_entry.grid(row=1, column=1, sticky="w", pady=8, padx=(0, 10))
-        self.password_entry.insert(0, self.controller.config.get('Email', 'password', fallback=''))
+        self.password_entry.insert(
+            0, self.controller.config.get('Email', 'password', fallback=''))
         
         self.show_password = tk.BooleanVar()
-        toggle_btn = tk.Button(cred_group, text="👁️", command=self._toggle_password,
+        toggle_btn = tk.Button(cred_group, text="Ver", command=self._toggle_password,
                               font=("MS Sans Serif", 8), width=3, relief="raised", bd=1)
         toggle_btn.grid(row=1, column=2, sticky="w", pady=8, padx=(5, 0))
         
@@ -176,9 +177,11 @@ class PasoAjustes(tk.Frame):
         test_frame = tk.Frame(cred_group, bg="#f0f0f0")
         test_frame.grid(row=2, column=0, columnspan=3, pady=(10, 0), sticky="ew")
         
-        self.test_btn = tk.Button(test_frame, text="Probar Conexión", 
-                                 command=self._test_smtp_connection,
-                                 font=("MS Sans Serif", 8), relief="raised", bd=2, padx=15, pady=6)
+        self.test_btn = tk.Button(
+            test_frame, text="Probar Conexión",
+            command=self._test_smtp_connection,
+            font=("MS Sans Serif", 8), relief="raised",
+            bd=2, padx=15, pady=6)
         self.test_btn.pack(side="left", padx=(12, 0))
         
         self.test_status = tk.Label(test_frame, text="", font=("MS Sans Serif", 8), bg="#f0f0f0")
@@ -190,7 +193,8 @@ class PasoAjustes(tk.Frame):
             font=("Segoe UI", 10, "bold"), bg="#f8f9fa", fg="#2c3e50",
             relief="solid", bd=1, padx=15, pady=10
         )
-        template_group.pack(fill="both", expand=True, padx=10, pady=(15, 10))
+        template_group.pack(
+            fill="both", expand=True, padx=10, pady=(15, 10))
         
         # Asunto
         asunto_label_frame = tk.Frame(template_group, bg="#f8f9fa")
@@ -221,8 +225,10 @@ Resultado: Estimado/a Juan García López..."""
         
         self.asunto_entry = tk.Entry(template_group, width=60, font=("Segoe UI", 9), relief="solid", bd=1)
         self.asunto_entry.pack(fill="x", pady=(0, 10))
-        self.asunto_entry.insert(0, self.controller.config.get('Email', 'asunto', 
-                                fallback='Nómina correspondiente a {mes} {año}'))
+        self.asunto_entry.insert(
+            0, self.controller.config.get(
+                'Email', 'asunto',
+                fallback='Nómina correspondiente a {mes} {año}'))
         
         # Cuerpo del mensaje
         mensaje_label_frame = tk.Frame(template_group, bg="#f8f9fa")
@@ -243,7 +249,9 @@ Resultado: Estimado/a Juan García López..."""
                                    relief="solid", bd=1, wrap="word")
         self.mensaje_text.pack(fill="both", expand=True)
         
-        mensaje_default = self.controller.config.get('Email', 'cuerpo_mensaje', fallback='''Estimado/a {nombre} {apellidos},
+        mensaje_default = self.controller.config.get(
+            'Email', 'cuerpo_mensaje',
+            fallback='''Estimado/a {nombre} {apellidos},
 
 Le adjuntamos su nómina correspondiente al mes de {mes} de {año}.
 
@@ -255,14 +263,13 @@ Departamento de Recursos Humanos''')
     def _crear_pestaña_general(self):
         """Crea la pestaña de configuración general."""
         frame_general = ttk.Frame(self.notebook)
-        self.notebook.add(frame_general, text="🔧 General")
+        self.notebook.add(frame_general, text="General")
         
         # Configuración Básica
         basico_group = tk.LabelFrame(
             frame_general, text=" Configuración Básica ",
-            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0", fg="#000000",
-            relief="groove", bd=2
-        )
+            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0",
+            fg="#000000", relief="groove", bd=2)
         basico_group.pack(fill="x", padx=10, pady=(10, 0))
         basico_group.configure(bg="#f0f0f0")
         
@@ -270,9 +277,13 @@ Departamento de Recursos Humanos''')
         tk.Label(basico_group, text="Pausa entre emails:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
             row=0, column=0, sticky="w", pady=8, padx=12)
         
-        self.delay_var = tk.StringVar(value=self.controller.config.get('SMTP', 'delay_segundos', fallback='1.0'))
-        delay_spin = tk.Spinbox(basico_group, from_=0.5, to=5.0, increment=0.5, width=10, textvariable=self.delay_var,
-                               font=("MS Sans Serif", 8))
+        self.delay_var = tk.StringVar(
+            value=self.controller.config.get(
+                'SMTP', 'delay_segundos', fallback='1.0'))
+        delay_spin = tk.Spinbox(
+            basico_group, from_=0.5, to=5.0, increment=0.5,
+            width=10, textvariable=self.delay_var,
+            font=("MS Sans Serif", 8))
         delay_spin.grid(row=0, column=1, sticky="w", pady=8, padx=(0, 10))
         tk.Label(basico_group, text="segundos", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
             row=0, column=2, sticky="w", pady=8)
@@ -283,19 +294,19 @@ Departamento de Recursos Humanos''')
         
         self.pdf_password_entry = tk.Entry(basico_group, width=20, font=("MS Sans Serif", 8), show="*")
         self.pdf_password_entry.grid(row=1, column=1, sticky="w", pady=8, padx=(0, 10))
-        self.pdf_password_entry.insert(0, self.controller.config.get('PDF', 'password_autor', fallback=''))
+        self.pdf_password_entry.insert(
+            0, self.controller.config.get('PDF', 'password_autor', fallback=''))
         
         self.show_pdf_password = tk.BooleanVar()
-        pdf_toggle_btn = tk.Button(basico_group, text="👁️", command=self._toggle_pdf_password,
+        pdf_toggle_btn = tk.Button(basico_group, text="Ver", command=self._toggle_pdf_password,
                                   font=("MS Sans Serif", 8), width=3, relief="raised", bd=1)
         pdf_toggle_btn.grid(row=1, column=2, sticky="w", pady=8, padx=(5, 0))
         
         # Configuración de Carpetas y Archivos
         carpetas_group = tk.LabelFrame(
             frame_general, text=" Configuración de Carpetas y Archivos ",
-            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0", fg="#000000",
-            relief="groove", bd=2
-        )
+            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0",
+            fg="#000000", relief="groove", bd=2)
         carpetas_group.pack(fill="x", padx=10, pady=(15, 0))
         carpetas_group.configure(bg="#f0f0f0")
         
@@ -304,8 +315,10 @@ Departamento de Recursos Humanos''')
         selector_frame.pack(fill="x", padx=12, pady=8)
         selector_frame.grid_columnconfigure(0, weight=1)
         
-        self.carpeta_salida = tk.StringVar(value=self.controller.config.get('Carpetas', 'salida', 
-                                          fallback='2_nominas_individuales_encriptadas'))
+        self.carpeta_salida = tk.StringVar(
+            value=self.controller.config.get(
+                'Carpetas', 'salida',
+                fallback='2_nominas_individuales_encriptadas'))
         
         # Campo de texto y botón examinar estilo Windows (igual que Paso1)
         self.carpeta_entry = tk.Entry(selector_frame, textvariable=self.carpeta_salida, 
@@ -319,8 +332,11 @@ Departamento de Recursos Humanos''')
         browse_btn.grid(row=0, column=1)
         
         # Etiqueta descriptiva
-        tk.Label(selector_frame, text="Seleccione dónde guardar las nóminas procesadas",
-                font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#000080", justify="left").grid(
+        tk.Label(
+            selector_frame,
+            text="Seleccione dónde guardar las nóminas procesadas",
+            font=("MS Sans Serif", 8), bg="#f0f0f0",
+            fg="#000080", justify="left").grid(
                 row=1, column=0, columnspan=2, sticky="w", pady=(8, 0))
         
         # Formato de archivos
@@ -354,10 +370,13 @@ Ejemplo: {NOMBRE}_{APELLIDO}_Nomina_{mes}_{año}.pdf
 Resultado: JUAN_GARCIA_Nomina_septiembre_2025.pdf"""
         ToolTipButton(help_btn_formato, formato_tooltip)
         
-        self.formato_archivo = tk.StringVar(value=self.controller.config.get('Formato', 'archivo_nomina', 
-                                          fallback='{nombre}_{apellidos}_Nomina_{mes}_{año}.pdf'))
-        formato_entry = tk.Entry(formato_frame, textvariable=self.formato_archivo, width=60, 
-                               font=("MS Sans Serif", 8))
+        self.formato_archivo = tk.StringVar(
+            value=self.controller.config.get(
+                'Formato', 'archivo_nomina',
+                fallback='{nombre}_{apellidos}_Nomina_{mes}_{año}.pdf'))
+        formato_entry = tk.Entry(
+            formato_frame, textvariable=self.formato_archivo, width=60,
+            font=("MS Sans Serif", 8))
         formato_entry.pack(fill="x", pady=(5, 0))
         
         # Vista previa del formato
@@ -376,17 +395,25 @@ Resultado: JUAN_GARCIA_Nomina_septiembre_2025.pdf"""
         btn_frame.pack(fill="x", side="bottom", padx=20, pady=15)
         
         # Botón Guardar estilo Windows clásico
-        guardar_btn = tk.Button(btn_frame, text="Guardar", 
+        guardar_btn = tk.Button(btn_frame,
+                               text="Guardar",
                                command=self._guardar_configuracion,
-                               font=("MS Sans Serif", 8), 
-                               relief="raised", bd=2, padx=20, pady=8)
+                               font=("MS Sans Serif", 8),
+                               relief="raised",
+                               bd=2,
+                               padx=20,
+                               pady=8)
         guardar_btn.pack(side="right", padx=(10, 0))
         
         # Botón Cancelar estilo Windows clásico
-        cancelar_btn = tk.Button(btn_frame, text="Cancelar", 
+        cancelar_btn = tk.Button(btn_frame,
+                                text="Cancelar",
                                 command=self._cancelar,
                                 font=("MS Sans Serif", 8),
-                                relief="raised", bd=2, padx=20, pady=8)
+                                relief="raised",
+                                bd=2,
+                                padx=20,
+                                pady=8)
         cancelar_btn.pack(side="right")
 
     def _toggle_password(self):
@@ -405,77 +432,82 @@ Resultado: JUAN_GARCIA_Nomina_septiembre_2025.pdf"""
 
     def _test_smtp_connection(self):
         """Prueba la conexión SMTP."""
-        self.test_status.config(text="🔄 Probando...", fg="#f39c12")
+        self.test_status.config(text="Probando...", fg="#f39c12")
         self.test_btn.config(state="disabled")
-        
-        def test_connection():
-            try:
-                servidor = self.servidor_entry.get()
-                puerto = int(self.puerto_entry.get())
-                email = self.email_entry.get()
-                password = self.password_entry.get()
-                
-                server = smtplib.SMTP(servidor, puerto, timeout=10)
-                server.starttls()
-                server.login(email, password)
-                server.quit()
-                
-                self.test_status.config(text="✅ Conexión exitosa", fg="#27ae60")
-            except Exception as e:
-                self.test_status.config(text=f"❌ Error: {str(e)[:50]}...", fg="#e74c3c")
-            finally:
-                self.test_btn.config(state="normal")
-        
-        threading.Thread(target=test_connection, daemon=True).start()
+        threading.Thread(
+            target=self._test_connection_thread, daemon=True).start()
+
+    def _test_connection_thread(self):
+        try:
+            servidor = self.servidor_entry.get()
+            puerto = int(self.puerto_entry.get())
+            email = self.email_entry.get()
+            password = self.password_entry.get()
+
+            server = smtplib.SMTP(servidor, puerto, timeout=10)
+            server.starttls()
+            server.login(email, password)
+            server.quit()
+
+            self.test_status.config(text="OK - Conexión exitosa", fg="#27ae60")
+        except Exception as e:
+            self.test_status.config(
+                text=f"ERROR - Error: {str(e)[:50]}...", fg="#e74c3c")
+        finally:
+            self.test_btn.config(state="normal")
 
     def _browse_output_folder(self):
-        """Abre el diálogo para seleccionar carpeta de salida."""
         folder = filedialog.askdirectory(
+            parent=self,
             title="Seleccionar carpeta de salida",
-            initialdir=self.carpeta_salida.get()
-        )
+            initialdir=self.carpeta_salida.get())
         if folder:
             self.carpeta_salida.set(folder)
 
     def _update_preview(self, event=None):
-        """Actualiza la vista previa del formato de archivo."""
         try:
             plantilla = self.formato_archivo.get()
             ejemplo = generar_ejemplo_archivo(plantilla)
-            self.preview_label.config(text=f"Ejemplo: {ejemplo}", fg="#2980b9")
+            self.preview_label.config(
+                text=f"Ejemplo: {ejemplo}", fg="#2980b9")
         except Exception:
             self.preview_label.config(text="Formato inválido", fg="#e74c3c")
 
-
     def _guardar_configuracion(self):
-        """Guarda toda la configuración."""
         try:
-            # Email
-            self.controller.config.set('Email', 'email_origen', self.email_entry.get())
-            self.controller.config.set('Email', 'password', self.password_entry.get())
-            self.controller.config.set('Email', 'asunto', self.asunto_entry.get())
-            self.controller.config.set('Email', 'cuerpo_mensaje', self.mensaje_text.get("1.0", tk.END).strip())
-            
-            # SMTP
-            self.controller.config.set('SMTP', 'servidor', self.servidor_entry.get())
-            self.controller.config.set('SMTP', 'puerto', self.puerto_entry.get())
-            self.controller.config.set('SMTP', 'delay_segundos', self.delay_var.get())
-            
-            # Archivos
-            self.controller.config.set('Carpetas', 'salida', self.carpeta_salida.get())
-            self.controller.config.set('Formato', 'archivo_nomina', self.formato_archivo.get())
-            
-            # PDF
-            self.controller.config.set('PDF', 'password_autor', self.pdf_password_entry.get())
-            
-            # Guardar archivo
+            self._set_config_values()
             save_settings(self.controller.config)
-            
-            messagebox.showinfo("Configuración Guardada", 
-                              "La configuración se ha guardado correctamente.")
+            messagebox.showinfo(
+                "Configuración Guardada",
+                "La configuración se ha guardado correctamente.",
+                parent=self)
         except Exception as e:
-            messagebox.showerror("Error", f"Error al guardar la configuración: {e}")
+            messagebox.showerror(
+                "Error", f"Error al guardar la configuración: {e}",
+                parent=self)
+
+    def _set_config_values(self):
+        self.controller.config.set(
+            'Email', 'email_origen', self.email_entry.get())
+        self.controller.config.set(
+            'Email', 'password', self.password_entry.get())
+        self.controller.config.set(
+            'Email', 'asunto', self.asunto_entry.get())
+        self.controller.config.set(
+            'Email', 'cuerpo_mensaje',
+            self.mensaje_text.get("1.0", tk.END).strip())
+        self.controller.config.set(
+            'SMTP', 'servidor', self.servidor_entry.get())
+        self.controller.config.set(
+            'SMTP', 'puerto', self.puerto_entry.get())
+        self.controller.config.set(
+            'SMTP', 'delay_segundos', self.delay_var.get())
+        self.controller.config.set(
+            'Carpetas', 'salida', self.carpeta_salida.get())
+        self.controller.config.set(
+            'Formato', 'archivo_nomina', self.formato_archivo.get())
+        self.controller.config.set(
+            'PDF', 'password_autor', self.pdf_password_entry.get())
 
     def _cancelar(self):
-        """Cancela los cambios y vuelve al paso anterior."""
         self.controller.mostrar_frame("Paso1")

@@ -3,6 +3,7 @@ Sistema de logging centralizado para la aplicación de nóminas.
 """
 import logging
 import os
+import time
 from datetime import datetime
 
 
@@ -26,6 +27,9 @@ class NominaLogger:
         # Crear directorio de logs
         logs_dir = 'logs'
         os.makedirs(logs_dir, exist_ok=True)
+
+        # Limpiar logs antiguos
+        self._limpiar_logs_antiguos(logs_dir)
         
         # Timestamp para el archivo actual
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -47,7 +51,8 @@ class NominaLogger:
             
             # Formato detallado
             formatter = logging.Formatter(
-                '%(asctime)s - [%(levelname)8s] - %(funcName)s:%(lineno)d - %(message)s'
+                '%(asctime)s - [%(levelname)8s] - '
+                '%(funcName)s:%(lineno)d - %(message)s'
             )
             
             file_handler.setFormatter(formatter)
@@ -59,6 +64,24 @@ class NominaLogger:
     def get_logger(self):
         """Retorna el logger configurado."""
         return self._logger
+
+    def _limpiar_logs_antiguos(self, logs_dir, dias_a_mantener=7):
+        """Elimina archivos de log más antiguos que un número de días."""
+        try:
+            limite_segundos = dias_a_mantener * 24 * 60 * 60
+            limite_tiempo = time.time() - limite_segundos
+            for filename in os.listdir(logs_dir):
+                if not (filename.startswith('nominas_') and
+                        filename.endswith('.log')):
+                    continue
+
+                file_path = os.path.join(logs_dir, filename)
+                if os.path.isfile(file_path):
+                    if os.path.getmtime(file_path) < limite_tiempo:
+                        os.remove(file_path)
+                        self.info(f"Log antiguo eliminado: {filename}")
+        except OSError as e:
+            self.error(f"Error al limpiar logs antiguos: {e}")
     
     def info(self, message, *args, **kwargs):
         """Log level info."""
