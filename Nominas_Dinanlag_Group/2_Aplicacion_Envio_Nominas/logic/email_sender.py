@@ -24,8 +24,8 @@ def enviar_nominas_worker(
         if not email_origen or not password:
             raise ValueError("Credenciales de email no configuradas.")
 
-        servidor_smtp = "smtp.gmail.com"
-        puerto_smtp = 587
+        servidor_smtp = config.get('SMTP', 'servidor', fallback='smtp.gmail.com')
+        puerto_smtp = int(config.get('SMTP', 'puerto', fallback='587'))
         
         server = smtplib.SMTP(servidor_smtp, puerto_smtp)
         server.starttls()
@@ -37,7 +37,7 @@ def enviar_nominas_worker(
         tareas_a_enviar.sort(key=lambda x: x['pagina'])
         logging.info(f"Se enviarán {len(tareas_a_enviar)} nóminas.")
         
-        output_dir = "nominas_individuales"
+        output_dir = config.get('Carpetas', 'salida', fallback='nominas_individuales')
         os.makedirs(output_dir, exist_ok=True)
 
         for i, tarea in enumerate(tareas_a_enviar):
@@ -45,7 +45,6 @@ def enviar_nominas_worker(
             nif = tarea['nif']
             email_destino = tarea['email']
             
-            print(f"DEBUG EMAIL: Procesando {i+1}/{len(tareas_a_enviar)}: {nombre} (página {tarea['pagina']}) -> {email_destino}")
             logging.info(
                 f"Procesando {i+1}/{len(tareas_a_enviar)}: "
                 f"{nombre} ({email_destino})"
@@ -68,10 +67,15 @@ def enviar_nominas_worker(
                 pdf_encriptado_path = os.path.join(
                     output_dir, f"nomina_{nombre.replace(' ', '_')}.pdf"
                 )
+                
+                # Usar contraseña de autor si está configurada
+                password_autor = config.get('PDF', 'password_autor', fallback='')
+                owner_password = password_autor if password_autor else nif
+                
                 with pikepdf.open(temp_pdf_path) as pdf:
                     pdf.save(
                         pdf_encriptado_path,
-                        encryption=pikepdf.Encryption(owner=nif, user=nif, R=4)
+                        encryption=pikepdf.Encryption(owner=owner_password, user=nif, R=4)
                     )
                 os.remove(temp_pdf_path)
 

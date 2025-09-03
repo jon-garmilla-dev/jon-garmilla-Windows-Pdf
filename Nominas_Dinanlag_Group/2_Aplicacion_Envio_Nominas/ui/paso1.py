@@ -27,18 +27,30 @@ class Paso1(tk.Frame):
         pdf_section_frame.grid(row=1, column=0, sticky="new", pady=5)
         pdf_section_frame.grid_columnconfigure(0, weight=1)
 
-        pdf_selector_frame = ttk.Frame(pdf_section_frame)
+        pdf_selector_frame = tk.Frame(pdf_section_frame, bg="#f0f0f0")
         pdf_selector_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=5)
         pdf_selector_frame.grid_columnconfigure(1, weight=1)
 
-        tk.Button(
-            pdf_selector_frame, text="Seleccionar PDF...",
-            command=self.seleccionar_pdf
-        ).grid(row=0, column=0, pady=5, sticky="w")
-        self.pdf_summary_label = tk.Label(
-            pdf_selector_frame, text="(no seleccionado)", justify="left"
+        # Campo de texto y botón examinar estilo Windows
+        self.pdf_path_entry = tk.Entry(pdf_selector_frame, font=("MS Sans Serif", 8), state="readonly")
+        self.pdf_path_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8), pady=5)
+        
+        self.pdf_browse_btn = tk.Button(
+            pdf_selector_frame, text="Examinar...",
+            font=("MS Sans Serif", 8), width=12,
+            command=self.seleccionar_pdf,
+            relief="raised", bd=2, bg="#e0e0e0"
         )
-        self.pdf_summary_label.grid(row=0, column=1, sticky="ew", padx=10)
+        self.pdf_browse_btn.grid(row=0, column=1, pady=5)
+        
+        # Información del archivo
+        self.pdf_summary_label = tk.Label(
+            pdf_selector_frame, text="Seleccione un archivo PDF con nóminas",
+            font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#404040", justify="left"
+        )
+        self.pdf_summary_label.grid(row=1, column=0, columnspan=2, sticky="w", pady=(5, 0))
+        
+        pdf_selector_frame.grid_columnconfigure(0, weight=1)
 
         # --- Sección de Datos de Empleados ---
         employee_section_frame = ttk.LabelFrame(
@@ -48,19 +60,32 @@ class Paso1(tk.Frame):
         employee_section_frame.grid_columnconfigure(0, weight=1)
         employee_section_frame.grid_rowconfigure(2, weight=1)
 
-        employee_selector_frame = ttk.Frame(employee_section_frame)
+        employee_selector_frame = tk.Frame(employee_section_frame, bg="#f0f0f0")
         employee_selector_frame.grid(
             row=0, column=0, sticky="ew", padx=10, pady=5
         )
-        employee_selector_frame.grid_columnconfigure(1, weight=1)
+        employee_selector_frame.grid_columnconfigure(0, weight=1)
 
-        tk.Button(
-            employee_selector_frame, text="Seleccionar Archivo...",
-            command=self.seleccionar_empleados
-        ).grid(row=0, column=0, pady=5, sticky="w")
+        # Campo de texto y botón examinar estilo Windows
+        self.empleados_path_entry = tk.Entry(employee_selector_frame, font=("MS Sans Serif", 8), state="readonly")
+        self.empleados_path_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8), pady=5)
+        
+        self.empleados_browse_btn = tk.Button(
+            employee_selector_frame, text="Examinar...",
+            font=("MS Sans Serif", 8), width=12,
+            command=self.seleccionar_empleados,
+            relief="raised", bd=2, bg="#e0e0e0"
+        )
+        self.empleados_browse_btn.grid(row=0, column=1, pady=5)
+        
+        # Información del archivo
         self.employee_summary_label = tk.Label(
-            employee_selector_frame, text="(no seleccionado)", justify="left")
-        self.employee_summary_label.grid(row=0, column=1, sticky="ew", padx=10)
+            employee_selector_frame, text="Seleccione un archivo CSV o Excel con datos de empleados",
+            font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#404040", justify="left"
+        )
+        self.employee_summary_label.grid(row=1, column=0, columnspan=2, sticky="w", pady=(5, 0))
+        
+        employee_selector_frame.grid_columnconfigure(0, weight=1)
 
         # --- Frame para Vista Previa y Mapeo (inicialmente oculto) ---
         self.details_frame = ttk.Frame(employee_section_frame)
@@ -122,6 +147,13 @@ class Paso1(tk.Frame):
         if path:
             self.controller.pdf_path.set(path)
             self.controller.last_dir = os.path.dirname(path)
+            
+            # Actualizar campo de texto
+            self.pdf_path_entry.config(state="normal")
+            self.pdf_path_entry.delete(0, tk.END)
+            self.pdf_path_entry.insert(0, path)
+            self.pdf_path_entry.config(state="readonly")
+            
             self.actualizar_resumen_pdf()
             self.verificar_estado()
 
@@ -137,6 +169,13 @@ class Paso1(tk.Frame):
         if path:
             self.controller.empleados_path.set(path)
             self.controller.last_dir = os.path.dirname(path)
+            
+            # Actualizar campo de texto
+            self.empleados_path_entry.config(state="normal")
+            self.empleados_path_entry.delete(0, tk.END)
+            self.empleados_path_entry.insert(0, path)
+            self.empleados_path_entry.config(state="readonly")
+            
             self.actualizar_mapeo_columnas()
             self.actualizar_resumen_empleados()
             self.verificar_estado()
@@ -162,12 +201,15 @@ class Paso1(tk.Frame):
             try:
                 doc = fitz.open(pdf_path)
                 self.pdf_summary_label.config(
-                    text=f"{os.path.basename(pdf_path)} - "
-                         f"{doc.page_count} páginas."
+                    text=f"✓ Archivo válido: {doc.page_count} páginas encontradas",
+                    fg="#008000"
                 )
                 doc.close()
             except Exception as e:
-                self.pdf_summary_label.config(text=f"Error: {e}")
+                self.pdf_summary_label.config(
+                    text=f"✗ Error al leer el archivo: {str(e)[:50]}...",
+                    fg="#800000"
+                )
 
     def actualizar_resumen_empleados(self):
         empleados_path = self.controller.empleados_path.get()
@@ -175,12 +217,15 @@ class Paso1(tk.Frame):
             try:
                 df = leer_archivo_empleados(empleados_path)
                 self.employee_summary_label.config(
-                    text=f"{os.path.basename(empleados_path)} - "
-                         f"{len(df)} registros."
+                    text=f"✓ Archivo válido: {len(df)} empleados encontrados",
+                    fg="#008000"
                 )
                 self.actualizar_vista_previa(df)
             except Exception as e:
-                self.employee_summary_label.config(text=f"Error: {e}")
+                self.employee_summary_label.config(
+                    text=f"✗ Error al leer el archivo: {str(e)[:50]}...",
+                    fg="#800000"
+                )
 
     def actualizar_vista_previa(self, df):
         self.preview_tree.delete(*self.preview_tree.get_children())

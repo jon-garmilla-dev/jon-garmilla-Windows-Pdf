@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import threading
 import queue
+from datetime import datetime
 from logic.email_sender import enviar_nominas_worker
 
 
@@ -13,6 +14,9 @@ class Paso3(tk.Frame):
         self.email_to_item_id = {}
         self.email_to_data = {}  # Almacenar datos originales
         self.update_queue = queue.Queue()
+        
+        # Estadísticas para el resumen final
+        self.estadisticas = {"enviados": 0, "errores": 0, "total": 0, "tiempo_inicio": None}
 
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -98,7 +102,6 @@ class Paso3(tk.Frame):
             self.send_all_button.config(state="normal")
 
         for i, tarea in enumerate(tareas_ok):
-            print(f"DEBUG UI: Fila {i+1} en tabla -> {tarea['nombre']} (página {tarea['pagina']})")
             item_id = self.tree.insert(
                 "", "end",
                 values=(
@@ -129,7 +132,17 @@ class Paso3(tk.Frame):
             "Confirmar Envío",
             "¿Está seguro de que desea iniciar el envío de correos?"
         ):
+            # Inicializar estadísticas
+            self.estadisticas = {
+                "enviados": 0,
+                "errores": 0, 
+                "total": len([t for t in self.controller.tareas_verificacion if t['status'] == '✅ OK']),
+                "tiempo_inicio": datetime.now()
+            }
+            
             self.progress_bar['value'] = 0
+            self.send_all_button.config(state="disabled")
+            
             threading.Thread(
                 target=enviar_nominas_worker,
                 args=(
@@ -147,8 +160,19 @@ class Paso3(tk.Frame):
 
     def update_progress(self, value):
         if value == -1:
-            self.send_all_button.config(state="normal")
             self.progress_bar['value'] = 100  # Finalizar la barra para terminar el bucle
+            
+            # Mostrar página de completado con estadísticas
+            completado_frame = self.controller.frames["PasoCompletado"]
+            completado_frame.actualizar_estadisticas(
+                self.estadisticas["enviados"],
+                self.estadisticas["errores"],
+                self.estadisticas["total"],
+                self.estadisticas["tiempo_inicio"]
+            )
+            
+            # Cambiar a la página de completado
+            self.after(1000, lambda: self.controller.mostrar_frame("PasoCompletado"))
             return
         self.progress_bar['value'] = value
 
@@ -159,7 +183,13 @@ class Paso3(tk.Frame):
                 item_id = self.email_to_item_id.get(unique_key)
                 original_data = self.email_to_data.get(unique_key)
                 if item_id and original_data:
-                    print(f"DEBUG UPDATE: Actualizando {original_data[0]} -> {msg} ({status})")
+                    
+                    # Contar estadísticas solo para estados finales
+                    if status == "sent":
+                        self.estadisticas["enviados"] += 1
+                    elif status == "error":
+                        self.estadisticas["errores"] += 1
+                    
                     # Usar los datos originales almacenados, solo cambiar el estado
                     self.tree.item(
                         item_id,
