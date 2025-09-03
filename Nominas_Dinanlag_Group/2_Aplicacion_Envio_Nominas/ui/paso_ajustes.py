@@ -7,6 +7,60 @@ from logic.settings import save_settings
 from logic.formato_archivos import generar_ejemplo_archivo, validar_plantilla
 
 
+class ToolTipButton:
+    """Clase para crear tooltips activados por botón."""
+    def __init__(self, button, text):
+        self.button = button
+        self.text = text
+        self.tipwindow = None
+        self.button.bind("<Button-1>", self.toggle_tooltip)
+        
+    def toggle_tooltip(self, event=None):
+        if self.tipwindow:
+            self.hide_tooltip()
+        else:
+            self.show_tooltip()
+            
+    def show_tooltip(self, event=None):
+        if self.tipwindow or not self.text:
+            return
+        
+        # Posicionar cerca del botón
+        x = self.button.winfo_rootx() + 30
+        y = self.button.winfo_rooty() + 25
+        
+        self.tipwindow = tw = tk.Toplevel(self.button)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry("+%d+%d" % (x, y))
+        
+        # Mismo estilo que los tooltips originales
+        label = tk.Label(tw, text=self.text, justify=tk.LEFT,
+                        background="#ffffe0", relief=tk.SOLID, borderwidth=1,
+                        font=("MS Sans Serif", 8, "normal"), wraplength=300,
+                        padx=8, pady=6)
+        label.pack()
+        
+        # Eventos para cerrar el tooltip cuando se sale con el cursor
+        tw.bind("<Leave>", self.hide_tooltip)
+        label.bind("<Leave>", self.hide_tooltip)
+        
+        # Auto-ocultar después de 8 segundos
+        self.auto_hide_id = tw.after(8000, self.hide_tooltip)
+
+    def hide_tooltip(self, event=None):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            # Cancelar el auto-hide si existe
+            if hasattr(self, 'auto_hide_id') and self.auto_hide_id:
+                try:
+                    tw.after_cancel(self.auto_hide_id)
+                except:
+                    pass
+            tw.destroy()
+
+
+
 class PasoAjustes(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent, bg="#f0f0f0")
@@ -139,7 +193,31 @@ class PasoAjustes(tk.Frame):
         template_group.pack(fill="both", expand=True, padx=10, pady=(15, 10))
         
         # Asunto
-        tk.Label(template_group, text="Asunto:", font=("Segoe UI", 9), bg="#f8f9fa").pack(anchor="w", pady=(0, 5))
+        asunto_label_frame = tk.Frame(template_group, bg="#f8f9fa")
+        asunto_label_frame.pack(fill="x", pady=(0, 5))
+        
+        tk.Label(asunto_label_frame, text="Asunto:", font=("Segoe UI", 9), bg="#f8f9fa").pack(side="left", anchor="w")
+        
+        # Botón de ayuda para asunto - mismo estilo que el botón Guardar
+        help_btn_asunto = tk.Button(asunto_label_frame, text="?", 
+                                  font=("MS Sans Serif", 8), width=2,
+                                  relief="raised", bd=2)
+        help_btn_asunto.pack(side="left", padx=(10, 0))
+        
+        # Tooltip para variables de email
+        email_tooltip = """Variables disponibles para asunto y mensaje:
+
+{nombre} - Nombre del empleado (ej: Juan)
+{apellidos} - Apellidos del empleado (ej: García López)
+{mes} - Mes actual (ej: septiembre)
+{año} - Año actual (ej: 2025)
+
+Ejemplo asunto: Nómina de {nombre} - {mes} {año}
+Resultado: Nómina de Juan - septiembre 2025
+
+Ejemplo mensaje: Estimado/a {nombre} {apellidos}...
+Resultado: Estimado/a Juan García López..."""
+        ToolTipButton(help_btn_asunto, email_tooltip)
         
         self.asunto_entry = tk.Entry(template_group, width=60, font=("Segoe UI", 9), relief="solid", bd=1)
         self.asunto_entry.pack(fill="x", pady=(0, 10))
@@ -147,7 +225,19 @@ class PasoAjustes(tk.Frame):
                                 fallback='Nómina correspondiente a {mes} {año}'))
         
         # Cuerpo del mensaje
-        tk.Label(template_group, text="Mensaje:", font=("Segoe UI", 9), bg="#f8f9fa").pack(anchor="w", pady=(0, 5))
+        mensaje_label_frame = tk.Frame(template_group, bg="#f8f9fa")
+        mensaje_label_frame.pack(fill="x", pady=(0, 5))
+        
+        tk.Label(mensaje_label_frame, text="Mensaje:", font=("Segoe UI", 9), bg="#f8f9fa").pack(side="left", anchor="w")
+        
+        # Botón de ayuda para mensaje - mismo estilo que el botón Guardar
+        help_btn_mensaje = tk.Button(mensaje_label_frame, text="?", 
+                                   font=("MS Sans Serif", 8), width=2,
+                                   relief="raised", bd=2)
+        help_btn_mensaje.pack(side="left", padx=(10, 0))
+        
+        # Mismo tooltip que el asunto (variables iguales)
+        ToolTipButton(help_btn_mensaje, email_tooltip)
         
         self.mensaje_text = tk.Text(template_group, height=6, width=60, font=("Segoe UI", 9), 
                                    relief="solid", bd=1, wrap="word")
@@ -237,7 +327,32 @@ Departamento de Recursos Humanos''')
         formato_frame = tk.Frame(carpetas_group, bg="#f0f0f0")
         formato_frame.pack(fill="x", padx=12, pady=8)
         
-        tk.Label(formato_frame, text="Formato de archivo:", font=("MS Sans Serif", 8), bg="#f0f0f0").pack(anchor="w")
+        # Frame para etiqueta y botón de ayuda
+        formato_label_frame = tk.Frame(formato_frame, bg="#f0f0f0")
+        formato_label_frame.pack(fill="x")
+        
+        tk.Label(formato_label_frame, text="Formato de archivo:", font=("MS Sans Serif", 8), bg="#f0f0f0").pack(side="left", anchor="w")
+        
+        # Botón de ayuda para formato de archivo - mismo estilo que el botón Guardar
+        help_btn_formato = tk.Button(formato_label_frame, text="?", 
+                                   font=("MS Sans Serif", 8), width=2,
+                                   relief="raised", bd=2)
+        help_btn_formato.pack(side="left", padx=(10, 0))
+        
+        # Tooltip para formato de archivo
+        formato_tooltip = """Variables disponibles para el formato de archivo:
+
+{NOMBRE} - Nombre en mayúsculas (ej: JUAN)
+{APELLIDO} - Apellido en mayúsculas (ej: GARCIA)
+{nombre} - Nombre normal (ej: Juan)
+{apellido} - Apellido normal (ej: García)
+{mes} - Mes actual en minúsculas (ej: septiembre)
+{MES} - Mes actual en mayúsculas (ej: SEPTIEMBRE)
+{año} - Año actual (ej: 2025)
+
+Ejemplo: {NOMBRE}_{APELLIDO}_Nomina_{mes}_{año}.pdf
+Resultado: JUAN_GARCIA_Nomina_septiembre_2025.pdf"""
+        ToolTipButton(help_btn_formato, formato_tooltip)
         
         self.formato_archivo = tk.StringVar(value=self.controller.config.get('Formato', 'archivo_nomina', 
                                           fallback='{nombre}_{apellidos}_Nomina_{mes}_{año}.pdf'))

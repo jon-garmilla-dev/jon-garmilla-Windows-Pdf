@@ -204,7 +204,7 @@ class Paso3(tk.Frame):
             
             # Intentar obtener apellido si existe en la tarea, sino separar del nombre
             nombre = tarea['nombre']
-            apellido_empleado = tarea.get('apellido', '')
+            apellido_empleado = tarea.get('apellidos', '')
             if not apellido_empleado and ' ' in nombre:
                 partes = nombre.strip().split(' ', 1)
                 nombre_empleado = partes[0]

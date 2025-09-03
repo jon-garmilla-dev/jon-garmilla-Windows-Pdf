@@ -719,7 +719,7 @@ def enviar_nominas_worker(
                                               fallback='{nombre}_Nomina_{mes}_{año}.pdf')
                 
                 # Intentar obtener apellido si existe en la tarea, sino separar del nombre
-                apellido_empleado = tarea.get('apellido', '')
+                apellido_empleado = tarea.get('apellidos', '')
                 if not apellido_empleado and ' ' in nombre:
                     # Si no hay apellido separado, intentar separar del nombre completo
                     partes = nombre.strip().split(' ', 1)
