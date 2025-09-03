@@ -44,8 +44,8 @@ class GestorNominasApp(tk.Tk):
         # Manejar el cierre de la ventana
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
         
-        # Ocultar splash y mostrar ventana principal después de la inicialización
-        self.after(1500, self._hide_splash_show_main)
+        # Ocultar splash cuando la app esté completamente cargada
+        self.after_idle(self._hide_splash_show_main)
 
     def center_window(self):
         """Centra la ventana en la pantalla principal."""
@@ -58,13 +58,40 @@ class GestorNominasApp(tk.Tk):
     
     def _show_splash(self):
         """Muestra la splash screen."""
+        import time
         from ui.splash_screen import SplashScreen
+        
+        # Marcar inicio del splash para timing
+        self._splash_start_time = time.time()
+        
         self.splash = SplashScreen(self)
         self.splash.transient(self)  # Hace que la splash sea hija de la ventana principal
         self.splash.grab_set()  # Hace que la splash sea modal
     
     def _hide_splash_show_main(self):
         """Oculta la splash screen y muestra la ventana principal."""
+        import time
+        
+        # Calcular tiempo transcurrido desde inicio
+        if not hasattr(self, '_splash_start_time'):
+            self._splash_start_time = time.time()
+        
+        elapsed_time = time.time() - self._splash_start_time
+        
+        # Tiempo mínimo para que se vea profesional (1 segundo)
+        # pero no más de 3 segundos para evitar frustración
+        min_splash_time = 1.0
+        
+        if elapsed_time < min_splash_time:
+            # Esperar un poco más para que se vea profesional
+            remaining_time = int((min_splash_time - elapsed_time) * 1000)
+            self.after(remaining_time, self._actually_hide_splash)
+        else:
+            # Ya pasó suficiente tiempo, mostrar inmediatamente
+            self._actually_hide_splash()
+    
+    def _actually_hide_splash(self):
+        """Realmente oculta la splash y muestra la ventana principal."""
         if hasattr(self, 'splash'):
             self.splash.destroy()
         self.deiconify()
