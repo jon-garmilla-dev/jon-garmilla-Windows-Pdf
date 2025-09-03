@@ -49,15 +49,23 @@ def analizar_archivos(pdf_path, empleados_path, columnas_map):
         
         tarea = {
             "pagina": num_pagina + 1, "nif": "N/A", "nombre": "N/A",
-            "email": "N/A", "status": "⚠️ Sin NIF en PDF"}
+            "apellidos": "N/A", "email": "N/A", "status": "⚠️ Sin NIF en PDF"}
         if nif_match:
             nif = nif_match.group(1)
             tarea["nif"] = nif
             # Usar el mapeo de columnas para la búsqueda
             info = df[df[columnas_map["nif"]] == nif]
             if not info.empty:
+                # Mantener nombre y apellidos separados (NO juntar)
+                nombre_solo = info.iloc[0][columnas_map["nombre"]]
+                if "apellidos" in columnas_map and columnas_map["apellidos"]:
+                    apellidos_campo = info.iloc[0][columnas_map["apellidos"]]
+                else:
+                    apellidos_campo = ""
+                
                 tarea.update({
-                    "nombre": info.iloc[0][columnas_map["nombre"]],
+                    "nombre": nombre_solo,  # Solo el nombre, sin apellidos
+                    "apellidos": apellidos_campo,  # Apellidos separados
                     "email": info.iloc[0][columnas_map["email"]],
                     "status": "✅ OK"
                 })

@@ -26,6 +26,7 @@ class AsistenteNominas(tk.Tk):
         self.mapa_columnas = {
             "nif": tk.StringVar(),
             "nombre": tk.StringVar(),
+            "apellidos": tk.StringVar(),
             "email": tk.StringVar()
         }
         self.tareas_verificacion = []
@@ -181,13 +182,19 @@ class AsistenteNominas(tk.Tk):
                     "antes de continuar a la verificación de datos."
                 )
                 return False
-            # También verificar que las columnas estén mapeadas
-            if not all(var.get() for var in self.mapa_columnas.values()):
+            # También verificar que las columnas estén mapeadas (apellidos es opcional)
+            campos_requeridos = ["nif", "nombre", "email"]
+            campos_faltantes = []
+            for campo in campos_requeridos:
+                if not self.mapa_columnas[campo].get():
+                    campos_faltantes.append(campo.upper())
+            
+            if campos_faltantes:
                 from tkinter import messagebox
                 messagebox.showwarning(
                     "Configuración Incompleta", 
-                    "Debe asignar las columnas en el Paso 1\n"
-                    "antes de continuar a la verificación."
+                    f"Debe asignar estas columnas en el Paso 1:\n{', '.join(campos_faltantes)}\n\n"
+                    "Nota: APELLIDOS es opcional"
                 )
                 return False
         

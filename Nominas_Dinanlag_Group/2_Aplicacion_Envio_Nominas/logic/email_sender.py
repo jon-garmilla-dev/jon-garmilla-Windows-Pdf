@@ -197,8 +197,22 @@ class RobustEmailSender:
                 self.server = None
 
 
-def generar_reporte_final(stats, tareas_procesadas, config):
-    """Genera un reporte final en Excel con todos los detalles del envío."""
+def generar_accion_requerida(status):
+    """Genera sugerencias de acción según el tipo de error."""
+    if "Sin NIF en PDF" in status:
+        return "Verificar que el PDF contenga NIFs válidos"
+    elif "NIF no encontrado en la lista" in status:
+        return "Añadir empleado a la lista o verificar NIF"
+    elif "Email inválido" in status:
+        return "Corregir formato del email del empleado"
+    elif "Sin datos" in status:
+        return "Verificar datos completos del empleado"
+    else:
+        return "Revisar manualmente este empleado"
+
+
+def generar_reporte_final(stats, todas_las_tareas_originales, config):
+    """Genera un reporte final en Excel con TODOS los empleados y sus estados."""
     try:
         carpeta_mes = stats.get('carpeta_mes')
         if not carpeta_mes:
@@ -213,6 +227,8 @@ def generar_reporte_final(stats, tareas_procesadas, config):
         timestamp = fecha_actual.strftime('%H%M%S')
         archivo_reporte = os.path.join(carpeta_mes, f"reporte_envio_{fecha_actual.year}_{mes_nombre}_{timestamp}.xlsx")
         
+        logging.info(f"📊 Generando reporte con {len(todas_las_tareas_originales)} empleados totales")
+        
         # Preparar datos para el reporte
         datos_reporte = []
         
@@ -220,7 +236,7 @@ def generar_reporte_final(stats, tareas_procesadas, config):
         enviados_exitosos = set()
         errores_dict = {}
         
-        # Procesar lista de errores
+        # Procesar lista de errores de envío
         for error_info in stats.get('errores_lista', []):
             key = f"{error_info['nombre']}|{error_info['email']}"
             errores_dict[key] = error_info['error']
@@ -228,45 +244,50 @@ def generar_reporte_final(stats, tareas_procesadas, config):
         # Determinar qué se envió exitosamente (total - errores)
         total_enviados = stats.get('enviados', 0)
         if total_enviados > 0:
-            # Los primeros en la lista que no están en errores se consideran exitosos
+            # Los que se procesaron y enviaron exitosamente
             count_exitosos = 0
-            for tarea in tareas_procesadas:
-                key = f"{tarea['nombre']}|{tarea['email']}"
-                if key not in errores_dict and count_exitosos < total_enviados:
-                    enviados_exitosos.add(key)
-                    count_exitosos += 1
+            for tarea in todas_las_tareas_originales:
+                if tarea['status'] == '✅ OK':  # Solo los que estaban OK para envío
+                    key = f"{tarea['nombre']}|{tarea['email']}"
+                    if key not in errores_dict and count_exitosos < total_enviados:
+                        enviados_exitosos.add(key)
+                        count_exitosos += 1
         
-        for tarea in tareas_procesadas:
+        # Procesar TODAS las tareas (incluyendo las que tenían errores en Paso 2)
+        for tarea in todas_las_tareas_originales:
             key = f"{tarea['nombre']}|{tarea['email']}"
             
-            # Determinar estado final
-            if key in enviados_exitosos:
+            # Determinar estado final según la lógica correcta
+            if tarea['status'] != '✅ OK':
+                # Las que tenían errores en Paso 2 = PENDIENTE
+                estado_envio = "PENDIENTE"
+                observaciones = f"No procesado: {tarea['status']}"
+            elif key in enviados_exitosos:
+                # Las que se procesaron y enviaron bien = ENVIADO
                 estado_envio = "ENVIADO"
                 observaciones = "Enviado correctamente"
             elif key in errores_dict:
+                # Las que se procesaron pero fallaron en el envío = ERROR
                 estado_envio = "ERROR"
                 observaciones = errores_dict[key]
             else:
+                # Fallback (no debería pasar)
                 estado_envio = "PENDIENTE"
                 observaciones = "No procesado"
             
-            # Generar nombre del archivo como se hizo en el envío
+            # Separar nombre y apellidos para el reporte
+            nombre_solo = tarea['nombre']
+            apellidos_solo = tarea.get('apellidos', '')
+            
+            # Generar nombre del archivo 
             plantilla_archivo = config.get('Formato', 'archivo_nomina', fallback='{nombre}_Nomina_{mes}_{año}.pdf')
-            nombre = tarea['nombre']
-            apellido_empleado = tarea.get('apellido', '')
-            if not apellido_empleado and ' ' in nombre:
-                partes = nombre.strip().split(' ', 1)
-                nombre_empleado = partes[0]
-                apellido_empleado = partes[1] if len(partes) > 1 else ''
-            else:
-                nombre_empleado = nombre
-                
-            nombre_archivo = generar_nombre_archivo(plantilla_archivo, nombre_empleado, apellido_empleado)
+            nombre_archivo = generar_nombre_archivo(plantilla_archivo, nombre_solo, apellidos_solo)
             
             datos_reporte.append({
                 'Página PDF': tarea['pagina'],
-                'NIF': tarea['nif'], 
-                'Nombre Completo': tarea['nombre'],
+                'D.N.I.': tarea['nif'], 
+                'Nombre': nombre_solo,
+                'Apellidos': apellidos_solo,
                 'Email': tarea['email'],
                 'Archivo PDF': nombre_archivo,
                 'Estado Envío': estado_envio,
@@ -335,8 +356,8 @@ def generar_reporte_final(stats, tareas_procesadas, config):
                 dv.prompt = 'Seleccione el estado del envío'
                 dv.promptTitle = 'Estado del Envío'
                 
-                # Aplicar validación a todas las celdas de la columna F (excepto cabecera)
-                rango_validacion = f"F2:F{len(datos_reporte) + 1}"
+                # Aplicar validación a todas las celdas de la columna G (excepto cabecera)
+                rango_validacion = f"G2:G{len(datos_reporte) + 1}"
                 dv.add(rango_validacion)
                 worksheet1.add_data_validation(dv)
                 
@@ -344,12 +365,12 @@ def generar_reporte_final(stats, tareas_procesadas, config):
                 
                 # Agregar formato condicional para coloreo dinámico de filas
                 # Rango completo de datos (todas las columnas, todas las filas con datos)  
-                rango_datos = f"A2:H{len(datos_reporte) + 1}"
+                rango_datos = f"A2:I{len(datos_reporte) + 1}"
                 
                 # Regla 1: ENVIADO = Verde
                 regla_enviado = Rule(
                     type="expression",
-                    formula=[f'$F2="ENVIADO"'],  # Si columna F = "ENVIADO"
+                    formula=[f'$G2="ENVIADO"'],  # Si columna G = "ENVIADO"
                     dxf=DifferentialStyle(fill=color_success)
                 )
                 worksheet1.conditional_formatting.add(rango_datos, regla_enviado)
@@ -357,7 +378,7 @@ def generar_reporte_final(stats, tareas_procesadas, config):
                 # Regla 2: ERROR = Rojo  
                 regla_error = Rule(
                     type="expression", 
-                    formula=[f'$F2="ERROR"'],  # Si columna F = "ERROR"
+                    formula=[f'$G2="ERROR"'],  # Si columna G = "ERROR"
                     dxf=DifferentialStyle(fill=color_error)
                 )
                 worksheet1.conditional_formatting.add(rango_datos, regla_error)
@@ -365,7 +386,7 @@ def generar_reporte_final(stats, tareas_procesadas, config):
                 # Regla 3: PENDIENTE = Amarillo
                 regla_pendiente = Rule(
                     type="expression",
-                    formula=[f'$F2="PENDIENTE"'],  # Si columna F = "PENDIENTE" 
+                    formula=[f'$G2="PENDIENTE"'],  # Si columna G = "PENDIENTE" 
                     dxf=DifferentialStyle(fill=color_pending)
                 )
                 worksheet1.conditional_formatting.add(rango_datos, regla_pendiente)
@@ -378,9 +399,9 @@ def generar_reporte_final(stats, tareas_procesadas, config):
                     for cell in row:
                         cell.protection = Protection(locked=True, hidden=False)
                 
-                # 2. Desproteger solo la columna F "Estado Envío" (excepto cabecera)
+                # 2. Desproteger solo la columna G "Estado Envío" (excepto cabecera)
                 for row_num in range(2, len(datos_reporte) + 2):  # Desde fila 2 hasta la última con datos
-                    worksheet1.cell(row=row_num, column=6).protection = Protection(locked=False, hidden=False)  # Columna F
+                    worksheet1.cell(row=row_num, column=7).protection = Protection(locked=False, hidden=False)  # Columna G
                 
                 # 3. Activar protección de la hoja (sin contraseña para facilidad de uso)
                 worksheet1.protection.sheet = True
@@ -389,16 +410,16 @@ def generar_reporte_final(stats, tareas_procesadas, config):
                 logging.info("🔒 Protección aplicada: Solo columna 'Estado Envío' es editable")
                 
                 # Agregar lógica empresarial: Auto-llenar observaciones
-                # Columna G = Observaciones, será oculta pero con fórmulas
+                # Columna H = Observaciones, será oculta pero con fórmulas
                 for row_num in range(2, len(datos_reporte) + 2):
-                    # Fórmula: Si F="ENVIADO" y G era "No procesado" → "Enviado manualmente"  
-                    formula = f'=IF(AND(F{row_num}="ENVIADO",G{row_num}="No procesado"),"Enviado manualmente",G{row_num})'
-                    worksheet1.cell(row=row_num, column=7).value = formula
-                    # Desproteger también columna G para que la fórmula funcione
-                    worksheet1.cell(row=row_num, column=7).protection = Protection(locked=False, hidden=True)
+                    # Fórmula: Si G="ENVIADO" y H era "No procesado" → "Enviado manualmente"  
+                    formula = f'=IF(AND(G{row_num}="ENVIADO",H{row_num}="No procesado"),"Enviado manualmente",H{row_num})'
+                    worksheet1.cell(row=row_num, column=8).value = formula
+                    # Desproteger también columna H para que la fórmula funcione
+                    worksheet1.cell(row=row_num, column=8).protection = Protection(locked=False, hidden=True)
                 
-                # Ocultar columna G "Observaciones" pero mantener funcionalidad
-                worksheet1.column_dimensions['G'].hidden = True
+                # Ocultar columna H "Observaciones" pero mantener funcionalidad
+                worksheet1.column_dimensions['H'].hidden = True
                 
                 logging.info("📝 Lógica empresarial agregada: Auto-llenado de observaciones")
             
@@ -458,6 +479,57 @@ def generar_reporte_final(stats, tareas_procesadas, config):
                 
                 adjusted_width = min(max(max_length + 2, 15), 50)
                 worksheet2.column_dimensions[column_letter].width = adjusted_width
+            
+            # Hoja 3: Empleados Pendientes (los que NO se pudieron procesar)
+            empleados_pendientes = [t for t in todas_las_tareas_originales if t['status'] != '✅ OK']
+            
+            if empleados_pendientes:
+                pendientes_data = []
+                for tarea in empleados_pendientes:
+                    pendientes_data.append({
+                        'Página PDF': tarea['pagina'],
+                        'D.N.I.': tarea['nif'],
+                        'Nombre': tarea['nombre'],
+                        'Apellidos': tarea.get('apellidos', ''),
+                        'Email': tarea['email'],
+                        'Motivo Pendiente': tarea['status'].replace('✅', '').replace('❌', '').replace('⚠️', '').strip(),
+                        'Acción Requerida': generar_accion_requerida(tarea['status'])
+                    })
+                
+                df_pendientes = pd.DataFrame(pendientes_data)
+                df_pendientes.to_excel(writer, sheet_name='Pendientes', index=False)
+                worksheet3 = writer.sheets['Pendientes']
+                
+                # Colorear cabeceras de la hoja Pendientes
+                for cell in worksheet3[1]:
+                    cell.fill = color_cabecera
+                    cell.font = font_cabecera
+                    cell.alignment = Alignment(horizontal='center', vertical='center')
+                
+                # Ajustar columnas y aplicar formato
+                for column in worksheet3.columns:
+                    max_length = 0
+                    column_letter = column[0].column_letter
+                    
+                    for row_num, cell in enumerate(column, 1):
+                        try:
+                            cell.alignment = Alignment(horizontal='center', vertical='center')
+                            
+                            # Colorear todas las filas de datos con amarillo claro (pendiente)
+                            if row_num > 1:  # Excepto cabecera
+                                cell.fill = color_pending
+                            
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(str(cell.value))
+                        except:
+                            pass
+                    
+                    adjusted_width = min(max(max_length + 2, 15), 50)
+                    worksheet3.column_dimensions[column_letter].width = adjusted_width
+                
+                logging.info(f"✅ Hoja 'Pendientes' agregada con {len(empleados_pendientes)} empleados")
+            else:
+                logging.info("✅ No hay empleados pendientes - todos se procesaron correctamente")
         
         logging.info(f"Reporte generado: {archivo_reporte}")
         
@@ -585,6 +657,9 @@ def enviar_nominas_worker(
         output_dir = os.path.join(carpeta_mes, "pdfs_individuales")
         os.makedirs(output_dir, exist_ok=True)
         
+        # Guardar carpeta para el reporte
+        stats['carpeta_mes'] = carpeta_mes
+        
         logging.info(f"📁 Estructura creada: {carpeta_mes}")
         logging.info(f"📁 PDFs se guardarán en: {output_dir}")
         
@@ -592,7 +667,7 @@ def enviar_nominas_worker(
         try:
             import shutil
             nombre_pdf_original = os.path.basename(pdf_path)
-            destino_pdf_original = os.path.join(carpeta_mes, f"nominas_original_{año}_{fecha_actual.month:02d}.pdf")
+            destino_pdf_original = os.path.join(carpeta_mes, nombre_pdf_original)
             shutil.copy2(pdf_path, destino_pdf_original)
             logging.info(f"📄 PDF original copiado: {destino_pdf_original}")
         except Exception as e:
@@ -773,8 +848,8 @@ def enviar_nominas_worker(
         logging.info(f"   📈 Tasa de éxito: {tasa_exito:.1f}%")
         logging.info("=" * 50)
         
-        # Generar reporte final
-        generar_reporte_final(stats, tareas_a_enviar, config)
+        # Generar reporte final con TODAS las tareas originales (para mostrar PENDIENTES)
+        generar_reporte_final(stats, tareas, config)
         
         # Pasar estadísticas finales al callback
         logging.info(f"📊 ENVIANDO ESTADÍSTICAS FINALES: enviados={stats['enviados']}, errores={stats['errores']}, total={stats['total']}")

@@ -115,8 +115,8 @@ class Paso1(tk.Frame):
         mapping_grid.pack(fill="x", padx=12, pady=8)
         mapping_grid.grid_columnconfigure(1, weight=1)
 
-        labels = ["NIF:", "NOMBRE:", "EMAIL:"]
-        variables = ["nif", "nombre", "email"]
+        labels = ["NIF:", "NOMBRE:", "APELLIDOS:", "EMAIL:"]
+        variables = ["nif", "nombre", "apellidos", "email"]
         self.combos = {}
 
         for i, (label, var) in enumerate(zip(labels, variables)):
@@ -214,37 +214,138 @@ class Paso1(tk.Frame):
         if not self.controller.columnas_disponibles:
             return
             
-        columnas = [col.lower() for col in self.controller.columnas_disponibles]
-        detecciones = {}
+        # Sistema de detección empresarial con niveles de confianza
+        detecciones_candidatos = self._analizar_candidatos_columnas()
         
-        # Patrones de detección para NIF
-        nif_patterns = ['nif', 'dni', 'cedula', 'identificacion', 'id', 'documento']
-        for i, col in enumerate(columnas):
-            for pattern in nif_patterns:
-                if pattern in col:
-                    detecciones['nif'] = self.controller.columnas_disponibles[i]
-                    break
+        # Seleccionar el mejor candidato para cada campo basado en confianza
+        detecciones_finales = self._resolver_conflictos_deteccion(detecciones_candidatos)
         
-        # Patrones de detección para NOMBRE
-        nombre_patterns = ['nombre', 'name', 'apellido', 'empleado', 'persona']
-        for i, col in enumerate(columnas):
-            for pattern in nombre_patterns:
-                if pattern in col:
-                    detecciones['nombre'] = self.controller.columnas_disponibles[i]
-                    break
-        
-        # Patrones de detección para EMAIL
-        email_patterns = ['email', 'mail', 'correo', 'electronico']
-        for i, col in enumerate(columnas):
-            for pattern in email_patterns:
-                if pattern in col:
-                    detecciones['email'] = self.controller.columnas_disponibles[i]
-                    break
-        
-        # Aplicar detecciones
-        for field, columna in detecciones.items():
+        # Aplicar detecciones finales
+        for field, info in detecciones_finales.items():
             if field in self.controller.mapa_columnas:
-                self.controller.mapa_columnas[field].set(columna)
+                self.controller.mapa_columnas[field].set(info['columna'])
+                # TODO: Mostrar nivel de confianza en UI (futuro)
+                print(f"🎯 Auto-detectado {field.upper()}: '{info['columna']}' (confianza: {info['confianza']}%)")
+    
+    def _analizar_candidatos_columnas(self):
+        """Analiza todas las columnas y genera candidatos con niveles de confianza"""
+        candidatos = {
+            'nif': [],
+            'nombre': [], 
+            'apellidos': [],
+            'email': []
+        }
+        
+        # Patrones con niveles de confianza (0-100)
+        patrones_confianza = {
+            'nif': [
+                ('d.n.i.', 95),         # Formato español oficial
+                ('dni', 90),            # Abreviatura común
+                ('nif', 85),            # Identificador fiscal
+                ('cedula', 70),         # Internacional
+                ('documento', 60),      # Genérico
+                ('identificacion', 55)   # Muy genérico
+            ],
+            'nombre': [
+                ('nombre', 90),         # Directo
+                ('name', 85),           # Inglés  
+                ('empleado', 70),       # Contexto laboral
+                ('persona', 65),        # Genérico
+                ('trabajador', 60)      # Contexto específico
+            ],
+            'apellidos': [
+                ('apellidos', 95),      # Plural, muy específico
+                ('apellido', 90),       # Singular
+                ('surname', 80),        # Inglés
+                ('lastname', 75),       # Inglés alternativo
+                ('familia', 60)         # Genérico
+            ],
+            'email': [
+                ('dirección de correo electrónico', 98),  # Formato oficial español
+                ('direccion de correo electronico', 95), # Sin tildes
+                ('correo electrónico', 90),               # Versión corta
+                ('correo electronico', 88),               # Sin tildes  
+                ('email', 80),                            # Internacional
+                ('mail', 75),                             # Corto
+                ('correo', 70)                            # Muy genérico
+            ]
+        }
+        
+        # Analizar cada columna disponible
+        for i, columna_original in enumerate(self.controller.columnas_disponibles):
+            columna_lower = columna_original.lower()
+            
+            # Evaluar cada campo
+            for campo, patrones in patrones_confianza.items():
+                for patron, confianza_base in patrones:
+                    if patron in columna_lower:
+                        # Calcular confianza final considerando factores adicionales
+                        confianza_final = self._calcular_confianza_contextual(
+                            columna_lower, patron, confianza_base, campo
+                        )
+                        
+                        candidatos[campo].append({
+                            'columna': columna_original,
+                            'patron_detectado': patron,
+                            'confianza': confianza_final,
+                            'indice': i
+                        })
+        
+        return candidatos
+    
+    def _calcular_confianza_contextual(self, columna_lower, patron, confianza_base, campo):
+        """Ajusta la confianza basada en el contexto de la columna"""
+        confianza = confianza_base
+        
+        # Penalizaciones por contextos negativos
+        penalizaciones = {
+            'nif': ['seguridad', 'social', 'afiliacion'],
+            'nombre': ['apellido', 'surname', 'last'],
+            'apellidos': [],  # Los apellidos no se penalizan fácilmente
+            'email': ['telefono', 'phone', 'numero']
+        }
+        
+        # Aplicar penalizaciones
+        for palabra_negativa in penalizaciones.get(campo, []):
+            if palabra_negativa in columna_lower:
+                confianza -= 30  # Penalización significativa
+        
+        # Bonificaciones por contextos positivos  
+        bonificaciones = {
+            'nif': ['documento', 'identidad'],
+            'nombre': ['empleado', 'trabajador'],
+            'apellidos': ['familia'],
+            'email': ['electronico', 'contacto']
+        }
+        
+        for palabra_positiva in bonificaciones.get(campo, []):
+            if palabra_positiva in columna_lower and palabra_positiva != patron:
+                confianza += 5  # Pequeña bonificación
+        
+        # Asegurar que la confianza esté en rango válido
+        return max(0, min(100, confianza))
+    
+    def _resolver_conflictos_deteccion(self, candidatos):
+        """Resuelve conflictos eligiendo el candidato con mayor confianza para cada campo"""
+        detecciones_finales = {}
+        
+        for campo, lista_candidatos in candidatos.items():
+            if lista_candidatos:
+                # Ordenar por confianza (mayor a menor)
+                lista_candidatos.sort(key=lambda x: x['confianza'], reverse=True)
+                mejor_candidato = lista_candidatos[0]
+                
+                # Solo aceptar si la confianza es razonable (>= 50%)
+                if mejor_candidato['confianza'] >= 50:
+                    detecciones_finales[campo] = mejor_candidato
+                    
+                    # Debug: mostrar todos los candidatos considerados
+                    print(f"📊 Campo {campo.upper()}:")
+                    for candidato in lista_candidatos[:3]:  # Top 3
+                        marca = "✅" if candidato == mejor_candidato else "  "
+                        print(f"  {marca} '{candidato['columna']}' ({candidato['confianza']}%)")
+        
+        return detecciones_finales
 
     def actualizar_visibilidad_detalles(self):
         if self.controller.empleados_path.get():

@@ -132,7 +132,7 @@ class Paso2(tk.Frame):
 
         self.tree = ttk.Treeview(
             tree_container,
-            columns=("Página", "NIF", "Nombre", "Email", "Estado"),
+            columns=("Página", "NIF", "Nombre", "Apellidos", "Email", "Estado"),
             show="headings",
             style="Custom.Treeview",
             height=8
@@ -146,8 +146,8 @@ class Paso2(tk.Frame):
 
         # Configurar columnas con anchos apropiados
         headings = {
-            "Página": 80, "NIF": 120, "Nombre": 180,
-            "Email": 220, "Estado": 200
+            "Página": 80, "NIF": 120, "Nombre": 140, "Apellidos": 140,
+            "Email": 200, "Estado": 180
         }
         for col, width in headings.items():
             self.tree.heading(col, text=col, anchor="w")
@@ -286,10 +286,17 @@ class Paso2(tk.Frame):
             else:
                 status_tag = row_style
             
-            # Insertar fila
+            # Insertar fila con orden específico de columnas
             self.tree.insert(
                 "", "end",
-                values=list(tarea_mostrada.values()),
+                values=(
+                    tarea_mostrada["pagina"],
+                    tarea_mostrada["nif"], 
+                    tarea_mostrada["nombre"],
+                    tarea_mostrada.get("apellidos", "N/A"),  # Apellidos puede no existir en datos antiguos
+                    tarea_mostrada["email"],
+                    tarea_mostrada["status"]
+                ),
                 tags=(row_style, status_tag)
             )
         
@@ -330,10 +337,10 @@ class Paso2(tk.Frame):
         if not valores:
             return
         
-        pagina, nif, nombre, email, estado = valores
+        pagina, nif, nombre, apellidos, email, estado = valores
         
         # Crear ventana de corrección
-        self.mostrar_dialogo_correccion(pagina, nif, nombre, email, estado)
+        self.mostrar_dialogo_correccion(pagina, nif, nombre, apellidos, email, estado)
 
     def crear_preview_pdf(self, pagina_num):
         """Crea una imagen preview de la página PDF especificada."""
@@ -386,7 +393,7 @@ class Paso2(tk.Frame):
             print(f"[DEBUG] Traceback: {traceback.format_exc()}")
             return None
 
-    def mostrar_dialogo_correccion(self, pagina, nif, nombre, email, estado):
+    def mostrar_dialogo_correccion(self, pagina, nif, nombre, apellidos, email, estado):
         """Muestra ventana para corregir datos manualmente."""
         ventana = tk.Toplevel(self)
         ventana.title(f"Corregir Datos - Página {pagina}")
@@ -426,7 +433,8 @@ class Paso2(tk.Frame):
         
         # Variables para los campos
         var_nif = tk.StringVar(value=nif)
-        var_nombre = tk.StringVar(value=nombre) 
+        var_nombre = tk.StringVar(value=nombre)
+        var_apellidos = tk.StringVar(value=apellidos)
         var_email = tk.StringVar(value=email)
         
         # Crear preview si está disponible
@@ -490,10 +498,15 @@ class Paso2(tk.Frame):
         entry_nombre = tk.Entry(campos_grid, textvariable=var_nombre, width=30, font=("MS Sans Serif", 8))
         entry_nombre.grid(row=1, column=1, sticky="ew", pady=5)
         
-        tk.Label(campos_grid, text="Email:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+        tk.Label(campos_grid, text="Apellidos:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
             row=2, column=0, sticky="w", pady=5, padx=(0, 5))
+        entry_apellidos = tk.Entry(campos_grid, textvariable=var_apellidos, width=30, font=("MS Sans Serif", 8))
+        entry_apellidos.grid(row=2, column=1, sticky="ew", pady=5)
+        
+        tk.Label(campos_grid, text="Email:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+            row=3, column=0, sticky="w", pady=5, padx=(0, 5))
         entry_email = tk.Entry(campos_grid, textvariable=var_email, width=30, font=("MS Sans Serif", 8))
-        entry_email.grid(row=2, column=1, sticky="ew", pady=5)
+        entry_email.grid(row=3, column=1, sticky="ew", pady=5)
         
         campos_grid.grid_columnconfigure(1, weight=1)
         
@@ -542,7 +555,7 @@ class Paso2(tk.Frame):
         def guardar():
             # Validar campos
             if not var_nif.get().strip() or not var_nombre.get().strip() or not var_email.get().strip():
-                messagebox.showerror("Error", "Todos los campos son obligatorios.")
+                messagebox.showerror("Error", "NIF, Nombre y Email son obligatorios. Apellidos es opcional.")
                 return
                 
             # Validar email básico
@@ -553,7 +566,8 @@ class Paso2(tk.Frame):
             # Guardar corrección
             self.datos_corregidos[int(pagina)] = {
                 "nif": var_nif.get().strip(),
-                "nombre": var_nombre.get().strip(), 
+                "nombre": var_nombre.get().strip(),
+                "apellidos": var_apellidos.get().strip(),
                 "email": var_email.get().strip(),
                 "status": "✅ OK (Corregido manualmente)"
             }
