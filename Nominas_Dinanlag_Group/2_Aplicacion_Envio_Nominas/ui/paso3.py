@@ -5,6 +5,7 @@ import threading
 import queue
 from datetime import datetime
 from logic.email_sender import enviar_nominas_worker
+from logic.formato_archivos import generar_nombre_archivo
 
 
 class Paso3(tk.Frame):
@@ -38,7 +39,7 @@ class Paso3(tk.Frame):
                   foreground=[('selected', 'white')])
         self.tree = ttk.Treeview(
             tree_frame,
-            columns=("Nombre", "Email", "Protegido", "Estado"),
+            columns=("Nombre", "Email", "Archivo PDF", "Estado"),
             show="headings"
         )
         
@@ -50,7 +51,7 @@ class Paso3(tk.Frame):
         self.tree.grid(row=0, column=0, sticky="nsew")
 
         headings = {
-            "Nombre": 200, "Email": 250, "Protegido": 100,
+            "Nombre": 200, "Email": 250, "Archivo PDF": 300,
             "Estado": 150
         }
         for col, width in headings.items():
@@ -74,19 +75,76 @@ class Paso3(tk.Frame):
         action_frame = tk.Frame(self)
         action_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=10)
         
-        tk.Button(
+        self.btn_anterior = tk.Button(
             action_frame, text="← Anterior",
-            command=lambda: controller.mostrar_frame("Paso2")
-        ).pack(side="left")
+            command=self.ir_anterior,
+            font=("MS Sans Serif", 8), width=12, height=2,
+            relief="raised", bd=2, bg="#e0e0e0"
+        )
+        self.btn_anterior.pack(side="left")
+        
         self.send_all_button = tk.Button(
             action_frame, text="Enviar a Todos",
-            command=self.iniciar_envio_todos
+            command=self.iniciar_envio_todos,
+            font=("MS Sans Serif", 8, "bold"), width=15, height=2,
+            relief="raised", bd=2, bg="#e0e0e0"
         )
         self.send_all_button.pack(side="right")
 
         self.controller.bind("<<ShowPaso3>>", self.actualizar_tabla_envio)
+        
+        # Estado de envío para controlar navegación
+        self.enviando = False
+
+    def ir_anterior(self):
+        """Navegar al paso anterior con validación."""
+        if self.enviando:
+            resultado = messagebox.askyesno(
+                "Envío en Curso",
+                "Hay un envío de nóminas en curso.\n\n"
+                "Si regresa al paso anterior, el proceso se detendrá y "
+                "podría perder el progreso actual.\n\n"
+                "¿Está seguro de que desea continuar?",
+                icon='warning'
+            )
+            if not resultado:
+                return
+            
+            # Si acepta, detener proceso
+            self.detener_envio()
+        
+        # Navegar al paso anterior
+        self.controller.mostrar_frame("Paso2")
+    
+    def bloquear_navegacion(self):
+        """Bloquea la navegación durante el envío."""
+        self.enviando = True
+        self.btn_anterior.config(
+            state="disabled",
+            text="← Enviando...",
+            bg="#c0c0c0"
+        )
+    
+    def desbloquear_navegacion(self):
+        """Desbloquea la navegación después del envío."""
+        self.enviando = False
+        self.btn_anterior.config(
+            state="normal",
+            text="← Anterior", 
+            bg="#e0e0e0"
+        )
+    
+    def detener_envio(self):
+        """Detiene el proceso de envío en curso."""
+        # TODO: Implementar detención del hilo de envío
+        self.desbloquear_navegacion()
+        self.send_all_button.config(state="normal", text="Enviar a Todos")
 
     def actualizar_tabla_envio(self, event=None):
+        """Actualiza la tabla y restablece el estado de navegación."""
+        # Asegurar que navegación esté desbloqueada al entrar al paso
+        self.desbloquear_navegacion()
+        
         self.tree.delete(*self.tree.get_children())
         self.email_to_item_id = {}
         self.email_to_data = {}
@@ -102,12 +160,28 @@ class Paso3(tk.Frame):
             self.send_all_button.config(state="normal")
 
         for i, tarea in enumerate(tareas_ok):
+            # Generar nombre de archivo como se hará en el envío
+            plantilla_archivo = self.controller.config.get('Formato', 'archivo_nomina', 
+                                                          fallback='{nombre}_Nomina_{mes}_{año}.pdf')
+            
+            # Intentar obtener apellido si existe en la tarea, sino separar del nombre
+            nombre = tarea['nombre']
+            apellido_empleado = tarea.get('apellido', '')
+            if not apellido_empleado and ' ' in nombre:
+                partes = nombre.strip().split(' ', 1)
+                nombre_empleado = partes[0]
+                apellido_empleado = partes[1] if len(partes) > 1 else ''
+            else:
+                nombre_empleado = nombre
+            
+            nombre_archivo = generar_nombre_archivo(plantilla_archivo, nombre_empleado, apellido_empleado)
+            
             item_id = self.tree.insert(
                 "", "end",
                 values=(
                     tarea["nombre"],
                     tarea["email"],
-                    "✅",
+                    nombre_archivo,
                     "Pendiente"
                 )
             )
@@ -141,7 +215,8 @@ class Paso3(tk.Frame):
             }
             
             self.progress_bar['value'] = 0
-            self.send_all_button.config(state="disabled")
+            self.send_all_button.config(state="disabled", text="Enviando...")
+            self.bloquear_navegacion()  # Bloquear navegación durante envío
             
             threading.Thread(
                 target=enviar_nominas_worker,
@@ -149,8 +224,8 @@ class Paso3(tk.Frame):
                     self.controller.pdf_path.get(),
                     self.controller.tareas_verificacion,
                     self.controller.config,
-                    lambda email, msg, status: self.update_queue.put(
-                        (email, msg, status)
+                    lambda email, msg, status, stats=None: self.update_queue.put(
+                        (email, msg, status, stats)
                     ),
                     lambda val: self.after(0, self.update_progress, val),
                 ),
@@ -161,6 +236,10 @@ class Paso3(tk.Frame):
     def update_progress(self, value):
         if value == -1:
             self.progress_bar['value'] = 100  # Finalizar la barra para terminar el bucle
+            
+            # Desbloquear navegación y restaurar botones
+            self.desbloquear_navegacion()
+            self.send_all_button.config(state="normal", text="Enviar a Todos")
             
             # Mostrar página de completado con estadísticas
             completado_frame = self.controller.frames["PasoCompletado"]
@@ -179,17 +258,24 @@ class Paso3(tk.Frame):
     def procesar_cola_ui(self):
         try:
             while True:
-                unique_key, msg, status = self.update_queue.get_nowait()
+                queue_item = self.update_queue.get_nowait()
+                
+                # Manejar formato con o sin estadísticas
+                if len(queue_item) == 4:
+                    unique_key, msg, status, stats = queue_item
+                else:
+                    unique_key, msg, status = queue_item
+                    stats = None
+                
+                # Si recibimos estadísticas finales, usarlas en lugar del conteo manual
+                if unique_key == "estadisticas_finales" and stats:
+                    self.estadisticas["enviados"] = stats['enviados']
+                    self.estadisticas["errores"] = stats['errores']
+                    continue
+                
                 item_id = self.email_to_item_id.get(unique_key)
                 original_data = self.email_to_data.get(unique_key)
                 if item_id and original_data:
-                    
-                    # Contar estadísticas solo para estados finales
-                    if status == "sent":
-                        self.estadisticas["enviados"] += 1
-                    elif status == "error":
-                        self.estadisticas["errores"] += 1
-                    
                     # Usar los datos originales almacenados, solo cambiar el estado
                     self.tree.item(
                         item_id,

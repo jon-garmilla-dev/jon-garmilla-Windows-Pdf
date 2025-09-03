@@ -1,5 +1,20 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
+import fitz  # PyMuPDF
+import io
+import os
+import sys
+import subprocess
+try:
+    from PIL import Image, ImageTk
+    PIL_AVAILABLE = True
+    print("[DEBUG] PIL cargado correctamente")
+except ImportError as e:
+    PIL_AVAILABLE = False
+    print(f"[DEBUG] PIL no disponible: {e}")
+except Exception as e:
+    PIL_AVAILABLE = False
+    print(f"[DEBUG] Error cargando PIL: {e}")
 
 
 class Paso2(tk.Frame):
@@ -177,6 +192,15 @@ class Paso2(tk.Frame):
         )
         self.btn_actualizar.pack(side="left")
         
+        # Botón para ver PDF completo
+        self.btn_ver_pdf = tk.Button(
+            botones_frame, text="Ver PDF Completo",
+            font=("MS Sans Serif", 8), width=18, height=1,
+            command=self.abrir_pdf_completo,
+            relief="raised", bd=2, bg="#e8f4fd"
+        )
+        self.btn_ver_pdf.pack(side="right", padx=(0, 10))
+        
         # Ayuda
         self.btn_ayuda = tk.Button(
             botones_frame, text="¿Necesita Ayuda?",
@@ -235,9 +259,21 @@ class Paso2(tk.Frame):
         # Llenar tabla con datos
         for i, tarea in enumerate(self.controller.tareas_verificacion):
             row_style = 'evenrow' if i % 2 == 0 else 'oddrow'
-            status = tarea["status"]
+            pagina = tarea["pagina"]
             
-            # Determinar estilo y contar
+            # Verificar si hay corrección manual primero
+            if pagina in self.datos_corregidos:
+                correcciones = self.datos_corregidos[pagina]
+                tarea_mostrada = tarea.copy()
+                tarea_mostrada.update(correcciones)
+                # Usar estado corregido
+                status = correcciones.get("status", tarea["status"])
+                tarea_mostrada["status"] = status
+            else:
+                tarea_mostrada = tarea
+                status = tarea["status"]
+            
+            # Determinar estilo y contar (solo UNA vez por tarea)
             if status.startswith("✅"):
                 status_tag = 'ok'
                 ok_count += 1
@@ -249,24 +285,6 @@ class Paso2(tk.Frame):
                 warning_count += 1
             else:
                 status_tag = row_style
-            
-            # Aplicar correcciones manuales si existen
-            pagina = tarea["pagina"]
-            if pagina in self.datos_corregidos:
-                correcciones = self.datos_corregidos[pagina]
-                tarea_mostrada = tarea.copy()
-                tarea_mostrada.update(correcciones)
-                # Si se corrigió manualmente, marcar como OK
-                if correcciones.get("status"):
-                    tarea_mostrada["status"] = correcciones["status"]
-                    status_tag = 'ok'
-                    ok_count += 1
-                    if status.startswith("❌"):
-                        error_count -= 1
-                    elif status.startswith("⚠️"):
-                        warning_count -= 1
-            else:
-                tarea_mostrada = tarea
             
             # Insertar fila
             self.tree.insert(
@@ -317,14 +335,70 @@ class Paso2(tk.Frame):
         # Crear ventana de corrección
         self.mostrar_dialogo_correccion(pagina, nif, nombre, email, estado)
 
+    def crear_preview_pdf(self, pagina_num):
+        """Crea una imagen preview de la página PDF especificada."""
+        if not PIL_AVAILABLE:
+            print("[DEBUG] PIL no disponible, saltando preview")
+            return None
+            
+        try:
+            pdf_path = self.controller.pdf_path.get()
+            if not pdf_path:
+                print("[DEBUG] No hay ruta PDF para preview")
+                return None
+                
+            print(f"[DEBUG] Creando preview de página {pagina_num}")
+            
+            doc = fitz.open(pdf_path)
+            page = doc.load_page(pagina_num - 1)  # pagina_num es 1-indexed
+            
+            # Renderizar página a imagen
+            mat = fitz.Matrix(2.5, 2.5)  # escala 2.5x para mejor legibilidad
+            pix = page.get_pixmap(matrix=mat)
+            img_data = pix.tobytes("ppm")
+            
+            print(f"[DEBUG] Imagen generada, tamaño: {len(img_data)} bytes")
+            
+            # Convertir a PIL Image
+            pil_image = Image.open(io.BytesIO(img_data))
+            
+            # Redimensionar para que quepa en la ventana (max 600px ancho)
+            width, height = pil_image.size
+            print(f"[DEBUG] Tamaño original: {width}x{height}")
+            
+            if width > 600:
+                ratio = 600 / width
+                new_width = 600
+                new_height = int(height * ratio)
+                pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                print(f"[DEBUG] Redimensionado a: {new_width}x{new_height}")
+            
+            # Convertir a PhotoImage para tkinter
+            photo = ImageTk.PhotoImage(pil_image)
+            print("[DEBUG] PhotoImage creado exitosamente")
+            
+            doc.close()
+            return photo
+            
+        except Exception as e:
+            print(f"[DEBUG] Error creando preview: {type(e).__name__}: {e}")
+            import traceback
+            print(f"[DEBUG] Traceback: {traceback.format_exc()}")
+            return None
+
     def mostrar_dialogo_correccion(self, pagina, nif, nombre, email, estado):
         """Muestra ventana para corregir datos manualmente."""
         ventana = tk.Toplevel(self)
         ventana.title(f"Corregir Datos - Página {pagina}")
-        ventana.geometry("450x300")
+        
+        # Ajustar tamaño si hay preview
+        if PIL_AVAILABLE:
+            ventana.geometry("1100x650")
+        else:
+            ventana.geometry("500x350")
+        
         ventana.configure(bg="#f0f0f0")
-        ventana.resizable(False, False)
-        ventana.grab_set()  # Modal
+        ventana.resizable(True, True)  # Permitir redimensionar para ver PDF
         
         # Centrar ventana
         ventana.transient(self.controller)
@@ -333,45 +407,136 @@ class Paso2(tk.Frame):
             self.controller.winfo_rooty() + 50
         ))
         
+        # Esperar a que la ventana esté completamente cargada antes del grab
+        ventana.update_idletasks()
+        try:
+            ventana.grab_set()  # Modal
+        except tk.TclError:
+            print("[DEBUG] No se pudo establecer grab modal, continuando sin él")
+        
         # Título
         tk.Label(
             ventana, text=f"Corrección Manual - Página {pagina}",
             font=("MS Sans Serif", 12, "bold"), bg="#f0f0f0"
         ).pack(pady=10)
         
-        # Frame para campos
-        campos_frame = tk.Frame(ventana, bg="#f0f0f0")
-        campos_frame.pack(fill="x", padx=20, pady=10)
+        # Contenedor principal con dos columnas si hay preview
+        main_container = tk.Frame(ventana, bg="#f0f0f0")
+        main_container.pack(fill="both", expand=True, padx=10, pady=5)
         
         # Variables para los campos
         var_nif = tk.StringVar(value=nif)
         var_nombre = tk.StringVar(value=nombre) 
         var_email = tk.StringVar(value=email)
         
+        # Crear preview si está disponible
+        preview_photo = None
+        if PIL_AVAILABLE:
+            preview_photo = self.crear_preview_pdf(int(pagina))
+            
+        if preview_photo:
+            # Layout con dos columnas: preview + campos
+            
+            # Columna izquierda - Preview del PDF
+            preview_frame = tk.LabelFrame(
+                main_container, text=" Vista Previa del PDF ",
+                font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0"
+            )
+            preview_frame.pack(side="left", fill="both", expand=True, padx=(0, 10))
+            
+            # Canvas con scrollbar para el PDF
+            preview_canvas = tk.Canvas(
+                preview_frame, bg="#ffffff", relief="sunken", bd=2,
+                width=650, height=500
+            )
+            preview_scrollbar = ttk.Scrollbar(preview_frame, orient="vertical", command=preview_canvas.yview)
+            preview_scrollbar.pack(side="right", fill="y")
+            preview_canvas.configure(yscrollcommand=preview_scrollbar.set)
+            preview_canvas.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+            
+            # Mostrar imagen en canvas
+            preview_canvas.create_image(10, 10, anchor="nw", image=preview_photo)
+            preview_canvas.configure(scrollregion=preview_canvas.bbox("all"))
+            
+            # Mantener referencia a la imagen
+            ventana.preview_photo = preview_photo
+            
+            # Columna derecha - Campos de edición
+            campos_container = tk.Frame(main_container, bg="#f0f0f0", width=400)
+            campos_container.pack(side="right", fill="y", anchor="n")
+            campos_container.pack_propagate(False)  # Mantener ancho fijo
+        else:
+            # Layout simple sin preview
+            campos_container = main_container
+        
+        # Frame para campos de edición
+        campos_frame = tk.LabelFrame(
+            campos_container, text=" Datos a Corregir ",
+            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0"
+        )
+        campos_frame.pack(fill="x", pady=(0, 10))
+        
+        campos_grid = tk.Frame(campos_frame, bg="#f0f0f0")
+        campos_grid.pack(fill="x", padx=10, pady=10)
+        
         # Campos de entrada
-        tk.Label(campos_frame, text="NIF:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
-            row=0, column=0, sticky="w", pady=5)
-        entry_nif = tk.Entry(campos_frame, textvariable=var_nif, width=40, font=("MS Sans Serif", 8))
-        entry_nif.grid(row=0, column=1, pady=5)
+        tk.Label(campos_grid, text="NIF:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+            row=0, column=0, sticky="w", pady=5, padx=(0, 5))
+        entry_nif = tk.Entry(campos_grid, textvariable=var_nif, width=30, font=("MS Sans Serif", 8))
+        entry_nif.grid(row=0, column=1, sticky="ew", pady=5)
         
-        tk.Label(campos_frame, text="Nombre:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
-            row=1, column=0, sticky="w", pady=5)
-        entry_nombre = tk.Entry(campos_frame, textvariable=var_nombre, width=40, font=("MS Sans Serif", 8))
-        entry_nombre.grid(row=1, column=1, pady=5)
+        tk.Label(campos_grid, text="Nombre:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+            row=1, column=0, sticky="w", pady=5, padx=(0, 5))
+        entry_nombre = tk.Entry(campos_grid, textvariable=var_nombre, width=30, font=("MS Sans Serif", 8))
+        entry_nombre.grid(row=1, column=1, sticky="ew", pady=5)
         
-        tk.Label(campos_frame, text="Email:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
-            row=2, column=0, sticky="w", pady=5)
-        entry_email = tk.Entry(campos_frame, textvariable=var_email, width=40, font=("MS Sans Serif", 8))
-        entry_email.grid(row=2, column=1, pady=5)
+        tk.Label(campos_grid, text="Email:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+            row=2, column=0, sticky="w", pady=5, padx=(0, 5))
+        entry_email = tk.Entry(campos_grid, textvariable=var_email, width=30, font=("MS Sans Serif", 8))
+        entry_email.grid(row=2, column=1, sticky="ew", pady=5)
         
-        # Información actual
-        info_frame = tk.LabelFrame(ventana, text=" Estado Actual ", font=("MS Sans Serif", 8), bg="#f0f0f0")
-        info_frame.pack(fill="x", padx=20, pady=(0, 10))
+        campos_grid.grid_columnconfigure(1, weight=1)
         
-        tk.Label(info_frame, text=estado, font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#800000").pack(pady=5)
+        # Información del estado actual
+        info_frame = tk.LabelFrame(
+            campos_container, text=" Estado Actual ",
+            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0"
+        )
+        info_frame.pack(fill="x", pady=(0, 10))
+        
+        tk.Label(
+            info_frame, text=estado, 
+            font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#800000",
+            wraplength=300, justify="left"
+        ).pack(padx=10, pady=8)
+        
+        # Tips de ayuda
+        tips_frame = tk.LabelFrame(
+            campos_container, text=" Ayuda ",
+            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0"
+        )
+        tips_frame.pack(fill="x", pady=(0, 10))
+        
+        tips_text = (
+            "• Revise la nómina en la vista previa\n"
+            "• Corrija los datos incorrectos\n" 
+            "• Todos los campos son obligatorios"
+        )
+        if not PIL_AVAILABLE:
+            tips_text = (
+                "• Corrija los datos incorrectos\n"
+                "• Todos los campos son obligatorios\n"
+                "• Para ver PDFs instale: pip install Pillow"
+            )
+        
+        tk.Label(
+            tips_frame, text=tips_text,
+            font=("MS Sans Serif", 7), bg="#f0f0f0", fg="#404040",
+            justify="left"
+        ).pack(padx=10, pady=5)
         
         # Botones
-        btn_frame = tk.Frame(ventana, bg="#f0f0f0")
+        btn_frame = tk.Frame(campos_container if preview_photo else ventana, bg="#f0f0f0")
         btn_frame.pack(pady=10)
         
         def guardar():
@@ -400,10 +565,21 @@ class Paso2(tk.Frame):
         def cancelar():
             ventana.destroy()
         
+        def ver_pdf_completo():
+            """Abre el PDF en una ventana más grande."""
+            # Reutilizar el método principal con mejor manejo de errores
+            self.abrir_pdf_completo()
+        
+        # Botones principales
         tk.Button(btn_frame, text="Guardar", command=guardar, 
                  font=("MS Sans Serif", 8, "bold"), width=12, bg="#e0e0e0").pack(side="left", padx=5)
         tk.Button(btn_frame, text="Cancelar", command=cancelar,
                  font=("MS Sans Serif", 8), width=12, bg="#e0e0e0").pack(side="left", padx=5)
+        
+        # Botón para abrir PDF completo
+        if preview_photo:
+            tk.Button(btn_frame, text="Ver PDF Completo", command=ver_pdf_completo,
+                     font=("MS Sans Serif", 7), width=15, bg="#fff8e0").pack(side="right", padx=5)
 
     def reverificar_datos(self):
         """Vuelve a ejecutar el análisis de archivos."""
@@ -434,6 +610,256 @@ class Paso2(tk.Frame):
             
             messagebox.showinfo("Completado", "Datos reverificados correctamente.")
 
+    def abrir_pdf_completo(self):
+        """Abre el PDF maestro con el visualizador del sistema."""
+        pdf_path = self.controller.pdf_path.get()
+        
+        if not pdf_path:
+            messagebox.showwarning(
+                "Sin PDF",
+                "No hay ningún archivo PDF cargado para mostrar."
+            )
+            return
+        
+        # Verificar que el archivo existe
+        if not os.path.exists(pdf_path):
+            messagebox.showerror(
+                "Archivo no encontrado",
+                f"El archivo PDF no existe:\n{pdf_path}\n\n"
+                "Verifique que el archivo no se haya movido o eliminado."
+            )
+            return
+        
+        # Información de diagnóstico para debugging
+        print(f"[DEBUG] Intentando abrir PDF: {pdf_path}")
+        print(f"[DEBUG] Archivo existe: {os.path.exists(pdf_path)}")
+        print(f"[DEBUG] Plataforma: {sys.platform}")
+        
+        # Mostrar mensaje de que se está abriendo (más discreto)
+        # messagebox.showinfo(
+        #     "Abriendo PDF", 
+        #     f"Abriendo el archivo PDF...\n\n{os.path.basename(pdf_path)}\n\n"
+        #     "Si no se abre automáticamente, verifique que tenga un visor de PDF instalado."
+        # )
+        
+        try:
+            if sys.platform == "win32":
+                # En Windows, intentar varios métodos
+                try:
+                    # Método 1: startfile (más compatible)
+                    os.startfile(pdf_path)
+                except OSError as e:
+                    # Método 2: subprocess con cmd
+                    subprocess.run(['cmd', '/c', 'start', '', pdf_path], check=True)
+                    
+            elif sys.platform == "darwin":
+                # macOS
+                result = subprocess.run(["open", pdf_path], capture_output=True, text=True)
+                if result.returncode != 0:
+                    raise subprocess.CalledProcessError(result.returncode, "open", result.stderr)
+                    
+            else:
+                # Linux - intentar múltiples métodos
+                print("[DEBUG] Intentando abrir PDF en Linux")
+                success = False
+                
+                # Método 1: xdg-open (más común)
+                try:
+                    result = subprocess.run(
+                        ["xdg-open", pdf_path], 
+                        capture_output=True, 
+                        text=True,
+                        timeout=5,
+                        shell=False  # Evitar problemas con shell
+                    )
+                    if result.returncode == 0:
+                        success = True
+                        print("[DEBUG] xdg-open exitoso")
+                    else:
+                        print(f"[DEBUG] xdg-open falló: {result.stderr}")
+                except Exception as e:
+                    print(f"[DEBUG] xdg-open excepción: {e}")
+                
+                # Método 2: Detectar visor de PDF específico
+                if not success:
+                    viewers = ['evince', 'okular', 'zathura', 'mupdf', 'firefox']
+                    for viewer in viewers:
+                        try:
+                            # Verificar si el viewer existe
+                            subprocess.run(['which', viewer], capture_output=True, check=True)
+                            # Si existe, intentar abrir
+                            result = subprocess.run(
+                                [viewer, pdf_path], 
+                                capture_output=True, 
+                                text=True,
+                                timeout=5
+                            )
+                            success = True
+                            print(f"[DEBUG] {viewer} exitoso")
+                            break
+                        except Exception as e:
+                            print(f"[DEBUG] {viewer} no disponible: {e}")
+                            continue
+                
+                if not success:
+                    raise subprocess.CalledProcessError(1, "pdf viewers", "No se encontró visor de PDF")
+                
+        except subprocess.CalledProcessError as e:
+            messagebox.showerror(
+                "Error al abrir PDF",
+                f"No se pudo abrir el archivo PDF:\n{e}\n\n"
+                f"Posibles soluciones:\n"
+                f"• Instale un visor de PDF (Adobe Reader, SumatraPDF, etc.)\n"
+                f"• Abra manualmente el archivo en:\n{pdf_path}"
+            )
+        except FileNotFoundError:
+            messagebox.showerror(
+                "Visor PDF no encontrado",
+                f"No se encontró un visor de PDF en su sistema.\n\n"
+                f"Instale un programa para ver PDFs o abra manualmente:\n{pdf_path}"
+            )
+        except Exception as e:
+            # Mostrar diálogo con opciones adicionales
+            self.mostrar_dialogo_error_pdf(pdf_path, e)
+
+    def mostrar_dialogo_error_pdf(self, pdf_path, error):
+        """Muestra diálogo de error con opciones para el usuario."""
+        ventana_error = tk.Toplevel(self)
+        ventana_error.title("Error al abrir PDF")
+        ventana_error.geometry("500x350")
+        ventana_error.configure(bg="#f0f0f0")
+        ventana_error.resizable(False, False)
+        
+        # Centrar ventana
+        ventana_error.transient(self.controller)
+        ventana_error.geometry("+%d+%d" % (
+            self.controller.winfo_rootx() + 100,
+            self.controller.winfo_rooty() + 100
+        ))
+        
+        # Esperar a que la ventana esté lista antes del grab
+        ventana_error.update_idletasks()
+        try:
+            ventana_error.grab_set()
+        except tk.TclError:
+            print("[DEBUG] No se pudo establecer grab modal en diálogo error")
+        
+        # Título y explicación
+        tk.Label(
+            ventana_error, text="⚠️ No se pudo abrir el PDF",
+            font=("MS Sans Serif", 12, "bold"), bg="#f0f0f0", fg="#800000"
+        ).pack(pady=10)
+        
+        # Información del error
+        error_frame = tk.LabelFrame(
+            ventana_error, text=" Detalles del Error ",
+            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0"
+        )
+        error_frame.pack(fill="x", padx=20, pady=10)
+        
+        tk.Label(
+            error_frame, text=f"Error: {type(error).__name__}",
+            font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#800000"
+        ).pack(anchor="w", padx=10, pady=5)
+        
+        tk.Label(
+            error_frame, text=f"Detalle: {str(error)[:100]}{'...' if len(str(error)) > 100 else ''}",
+            font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#404040",
+            wraplength=450
+        ).pack(anchor="w", padx=10, pady=(0, 10))
+        
+        # Información del archivo
+        archivo_frame = tk.LabelFrame(
+            ventana_error, text=" Archivo PDF ",
+            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0"
+        )
+        archivo_frame.pack(fill="x", padx=20, pady=10)
+        
+        tk.Label(
+            archivo_frame, text=f"Archivo: {os.path.basename(pdf_path)}",
+            font=("MS Sans Serif", 8), bg="#f0f0f0"
+        ).pack(anchor="w", padx=10, pady=5)
+        
+        # Frame para la ruta con scrollbar
+        ruta_frame = tk.Frame(archivo_frame, bg="#f0f0f0")
+        ruta_frame.pack(fill="x", padx=10, pady=(0, 10))
+        
+        ruta_entry = tk.Entry(
+            ruta_frame, font=("MS Sans Serif", 7), 
+            bg="#ffffff", relief="sunken", bd=1
+        )
+        ruta_entry.pack(fill="x")
+        ruta_entry.insert(0, pdf_path)
+        ruta_entry.config(state="readonly")
+        
+        # Posibles soluciones
+        soluciones_frame = tk.LabelFrame(
+            ventana_error, text=" Posibles Soluciones ",
+            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0"
+        )
+        soluciones_frame.pack(fill="x", padx=20, pady=10)
+        
+        soluciones_text = (
+            "• Instale un visor de PDF (Adobe Reader, SumatraPDF, etc.)\n"
+            "• Verifique que el archivo no esté dañado\n"
+            "• Copie la ruta y abra el archivo manualmente\n"
+            "• Reinicie la aplicación si persiste el problema"
+        )
+        
+        tk.Label(
+            soluciones_frame, text=soluciones_text,
+            font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#000080",
+            justify="left"
+        ).pack(anchor="w", padx=10, pady=8)
+        
+        # Botones de acción
+        btn_frame = tk.Frame(ventana_error, bg="#f0f0f0")
+        btn_frame.pack(pady=15)
+        
+        def copiar_ruta():
+            """Copia la ruta del archivo al clipboard."""
+            try:
+                ventana_error.clipboard_clear()
+                ventana_error.clipboard_append(pdf_path)
+                ventana_error.update()  # Necesario para que funcione el clipboard
+                messagebox.showinfo("Copiado", f"Ruta copiada al portapapeles:\n\n{pdf_path}")
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo copiar al portapapeles:\n{e}")
+        
+        def abrir_carpeta():
+            """Abre la carpeta que contiene el PDF."""
+            try:
+                carpeta = os.path.dirname(pdf_path)
+                
+                if sys.platform == "win32":
+                    subprocess.run(['explorer', carpeta], shell=False)
+                elif sys.platform == "darwin":
+                    subprocess.run(["open", carpeta], shell=False)
+                else:
+                    # Linux - evitar problemas con shell
+                    subprocess.run(["xdg-open", carpeta], shell=False, timeout=5)
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo abrir la carpeta:\n{e}")
+        
+        def cerrar():
+            ventana_error.destroy()
+        
+        # Botones
+        tk.Button(
+            btn_frame, text="Copiar Ruta", command=copiar_ruta,
+            font=("MS Sans Serif", 8), width=12, bg="#e0e0e0"
+        ).pack(side="left", padx=5)
+        
+        tk.Button(
+            btn_frame, text="Abrir Carpeta", command=abrir_carpeta,
+            font=("MS Sans Serif", 8), width=12, bg="#e0e0e0"
+        ).pack(side="left", padx=5)
+        
+        tk.Button(
+            btn_frame, text="Cerrar", command=cerrar,
+            font=("MS Sans Serif", 8, "bold"), width=12, bg="#e0e0e0"
+        ).pack(side="left", padx=5)
+
     def mostrar_ayuda(self):
         """Muestra ayuda contextual para usuarios no técnicos."""
         ayuda_text = """
@@ -448,10 +874,15 @@ Estados posibles:
 ❌ ERROR: Faltan datos importantes, necesita corrección
 ⚠️ ADVERTENCIA: Revise manualmente los datos
 
+¿Cómo ver las nóminas?
+• Use "Ver PDF Completo" para abrir todo el archivo
+• Al hacer doble clic en una fila verá esa página específica
+
 ¿Cómo corregir errores?
 1. Haga doble clic en la fila con error
-2. Complete o corrija los datos en la ventana que aparece
-3. Haga clic en "Guardar"
+2. Revise la nómina en la vista previa (lado izquierdo)
+3. Complete o corrija los datos (lado derecho)
+4. Haga clic en "Guardar"
 
 ¿Qué hacer si hay muchos errores?
 • Revise que el archivo PDF sea correcto

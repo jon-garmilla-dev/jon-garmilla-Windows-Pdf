@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import os
 from logic.settings import save_settings
+from logic.formato_archivos import generar_ejemplo_archivo, validar_plantilla
 
 
 class PasoAjustes(tk.Frame):
@@ -114,19 +115,92 @@ class PasoAjustes(tk.Frame):
         desc_frame.grid(row=1, column=0, columnspan=2, sticky="w", padx=12, pady=(0, 8))
         
         tk.Label(
-            desc_frame, text="• Los PDFs tendrán DOS contraseñas:",
-            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0", fg="#000080"
+            desc_frame, text="Contraseña de edición de PDF",
+            font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#404040"
         ).pack(anchor="w")
-        tk.Label(
-            desc_frame, text="  - Para ABRIR: NIF del empleado (automático)",
-            font=("MS Sans Serif", 7), bg="#f0f0f0", fg="#404040"
-        ).pack(anchor="w", padx=(15, 0))
-        tk.Label(
-            desc_frame, text="  - Para EDITAR: Esta contraseña (solo usted la sabe)",
-            font=("MS Sans Serif", 7), bg="#f0f0f0", fg="#404040"
-        ).pack(anchor="w", padx=(15, 0))
 
         pdf_frame.grid_columnconfigure(1, weight=1)
+
+        # Formato de Archivos de Nómina estilo Windows
+        formato_frame = tk.LabelFrame(
+            self, text=" Formato de Nombres de Archivo ",
+            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0", fg="#000000",
+            relief="groove", bd=2
+        )
+        formato_frame.pack(fill="x", expand=False, pady=(0, 15))
+        formato_frame.configure(bg="#f0f0f0")
+
+        # Formato de archivo
+        tk.Label(
+            formato_frame, text="Formato del nombre de archivo:",
+            font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#000000"
+        ).grid(row=0, column=0, sticky="w", padx=10, pady=(10, 0))
+
+        self.formato_archivo_entry = tk.Entry(
+            formato_frame, font=("MS Sans Serif", 8), width=50,
+            relief="sunken", bd=1
+        )
+        self.formato_archivo_entry.grid(row=0, column=1, sticky="ew", padx=(5, 10), pady=(10, 0))
+        self.formato_archivo_entry.insert(0, self.controller.config.get(
+            'Formato', 'archivo_nomina', fallback='{NOMBRE}_{APELLIDO}_Nomina_{mes}_{año}.pdf'))
+            
+        # Binding para actualizar ejemplo en tiempo real
+        self.formato_archivo_entry.bind('<KeyRelease>', lambda e: self.after(100, self.actualizar_ejemplo_archivo))
+
+        # Botón de vista previa
+        formato_botones_frame = tk.Frame(formato_frame, bg="#f0f0f0")
+        formato_botones_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=(5, 0))
+
+        tk.Button(
+            formato_botones_frame, text="Vista Previa",
+            font=("MS Sans Serif", 8), width=15, height=1,
+            command=self.mostrar_vista_previa_archivo,
+            relief="raised", bd=1, bg="#e8f4fd"
+        ).pack(anchor="w")
+
+        # Descripción de variables
+        desc_formato_frame = tk.Frame(formato_frame, bg="#f0f0f0")
+        desc_formato_frame.grid(row=2, column=0, columnspan=2, sticky="ew", padx=10, pady=(5, 10))
+
+        tk.Label(
+            desc_formato_frame, text="Variables disponibles:",
+            font=("MS Sans Serif", 7, "bold"), bg="#f0f0f0", fg="#000000"
+        ).pack(anchor="w")
+        
+        variables_texto = (
+            "  • {NOMBRE} - Nombre en mayúsculas (ej: JOSUNE)\n"
+            "  • {APELLIDO} - Apellido en mayúsculas (ej: ANGOITIS)\n" 
+            "  • {nombre} - Nombre normal (ej: Josune)\n"
+            "  • {apellido} - Apellido normal (ej: Angoitis)\n"
+            "  • {mes} - Mes actual (ej: junio)\n"
+            "  • {año} - Año actual (ej: 2025)\n"
+            "  • {MES} - Mes en mayúsculas (ej: JUNIO)"
+        )
+        
+        tk.Label(
+            desc_formato_frame, text=variables_texto,
+            font=("MS Sans Serif", 7), bg="#f0f0f0", fg="#404040", justify="left"
+        ).pack(anchor="w", padx=(5, 0))
+
+        # Ejemplo en tiempo real
+        ejemplo_frame = tk.Frame(formato_frame, bg="#f9f9f9", relief="sunken", bd=1)
+        ejemplo_frame.grid(row=3, column=0, columnspan=2, sticky="ew", padx=10, pady=(5, 10))
+
+        tk.Label(
+            ejemplo_frame, text="Ejemplo:",
+            font=("MS Sans Serif", 7, "bold"), bg="#f9f9f9", fg="#000000"
+        ).pack(anchor="w", padx=5, pady=(5, 0))
+
+        self.ejemplo_archivo_label = tk.Label(
+            ejemplo_frame, text="",
+            font=("MS Sans Serif", 8), bg="#f9f9f9", fg="#0066cc"
+        )
+        self.ejemplo_archivo_label.pack(anchor="w", padx=5, pady=(0, 5))
+
+        # Actualizar ejemplo inicial
+        self.actualizar_ejemplo_archivo()
+
+        formato_frame.grid_columnconfigure(1, weight=1)
 
         # Configuración de carpetas estilo Windows
         carpetas_frame = tk.LabelFrame(
@@ -277,6 +351,18 @@ class PasoAjustes(tk.Frame):
                 )
                 return
 
+        # Validar formato de archivo
+        formato_archivo = self.formato_archivo_entry.get().strip()
+        if not formato_archivo:
+            messagebox.showerror(
+                "Error de Configuración",
+                "El formato de nombre de archivo es obligatorio."
+            )
+            return
+            
+        if not formato_archivo.endswith('.pdf'):
+            formato_archivo += '.pdf'
+
         # Guardar configuración
         if 'SMTP' not in self.controller.config:
             self.controller.config['SMTP'] = {}
@@ -284,12 +370,15 @@ class PasoAjustes(tk.Frame):
             self.controller.config['Carpetas'] = {}
         if 'PDF' not in self.controller.config:
             self.controller.config['PDF'] = {}
+        if 'Formato' not in self.controller.config:
+            self.controller.config['Formato'] = {}
 
         self.controller.config.set('SMTP', 'servidor', self.servidor_entry.get())
         self.controller.config.set('SMTP', 'puerto', self.puerto_entry.get())
         self.controller.config.set('Email', 'email_origen', self.email_entry.get())
         self.controller.config.set('Email', 'password', self.pass_entry.get())
         self.controller.config.set('PDF', 'password_autor', self.autor_pass_entry.get())
+        self.controller.config.set('Formato', 'archivo_nomina', formato_archivo)
         self.controller.config.set('Carpetas', 'salida', carpeta_salida)
 
         try:
@@ -305,3 +394,42 @@ class PasoAjustes(tk.Frame):
                 "Error al Guardar",
                 f"No se pudo guardar la configuración:\n{e}"
             )
+
+    def mostrar_vista_previa_archivo(self):
+        """Muestra vista previa del nombre de archivo generado."""
+        plantilla = self.formato_archivo_entry.get().strip()
+        
+        # Validar plantilla
+        es_valida, mensaje = validar_plantilla(plantilla)
+        if not es_valida:
+            messagebox.showerror("Error en Formato", mensaje)
+            return
+            
+        # Generar ejemplos
+        ejemplo1 = generar_ejemplo_archivo(plantilla)
+        
+        messagebox.showinfo(
+            "Vista Previa de Archivo",
+            f"Formato: {plantilla}\n\n"
+            f"Ejemplo con 'María García':\n{ejemplo1}\n\n"
+            "Los nombres reales se generarán automáticamente "
+            "según los datos de cada empleado."
+        )
+        
+    def actualizar_ejemplo_archivo(self):
+        """Actualiza el ejemplo mostrado en tiempo real."""
+        try:
+            plantilla = self.formato_archivo_entry.get().strip()
+            if plantilla:
+                ejemplo = generar_ejemplo_archivo(plantilla)
+                self.ejemplo_archivo_label.config(text=ejemplo, fg="#0066cc")
+            else:
+                self.ejemplo_archivo_label.config(text="(ingrese un formato)", fg="#888888")
+        except Exception:
+            self.ejemplo_archivo_label.config(text="(formato inválido)", fg="#cc0000")
+            
+    def aplicar_formato_predefinido(self, formato):
+        """Aplica un formato predefinido y actualiza el ejemplo."""
+        self.formato_archivo_entry.delete(0, 'end')
+        self.formato_archivo_entry.insert(0, formato)
+        self.actualizar_ejemplo_archivo()
