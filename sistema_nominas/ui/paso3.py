@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk, messagebox
 import threading
@@ -60,8 +59,8 @@ class Paso3(tk.Frame):
         self.tree.grid(row=0, column=0, sticky="nsew")
 
         headings = {
-            "Nombre": 150, "Apellidos": 150, "Email": 250, "Archivo PDF": 300,
-            "Estado": 150
+            "Nombre": 130, "Apellidos": 130, "Email": 220, 
+            "Archivo PDF": 280, "Estado": 120
         }
         for col, width in headings.items():
             self.tree.heading(col, text=col)
@@ -195,6 +194,7 @@ class Paso3(tk.Frame):
         self.tree.delete(*self.tree.get_children())
         self.email_to_item_id = {}
         self.email_to_data = {}
+        
         tareas_ok = [
             t for t in self.controller.tareas_verificacion
             if t['status'] == '[OK]'
@@ -233,6 +233,7 @@ class Paso3(tk.Frame):
                     "Pendiente"
                 )
             )
+            
             # Usar un mapeo único por página en lugar de email (que puede repetirse)
             unique_key = f"pagina_{tarea['pagina']}"
             self.email_to_item_id[unique_key] = item_id
@@ -252,7 +253,7 @@ class Paso3(tk.Frame):
 
         if messagebox.askyesno(
             "Confirmar Envío",
-            "¿Está seguro de que desea iniciar el envío de correos?"
+            "¿Está seguro de que desea iniciar el envío de correos a TODOS los empleados?"
         ):
             # Inicializar estadísticas
             self.estadisticas = {
@@ -371,7 +372,7 @@ class Paso3(tk.Frame):
                     # Usar los datos originales almacenados, solo cambiar el estado
                     self.tree.item(
                         item_id,
-                        values=(original_data[0], original_data[1], original_data[2], msg),
+                        values=(original_data[0], original_data[1], original_data[2], msg, status),
                         tags=(status,)
                     )
         except queue.Empty:
