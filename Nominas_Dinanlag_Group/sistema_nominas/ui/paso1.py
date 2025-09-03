@@ -94,8 +94,25 @@ class Paso1(tk.Frame):
         preview_frame.pack(fill="both", expand=True, pady=(0, 8))
         preview_frame.configure(bg="#f0f0f0")
 
-        self.preview_tree = ttk.Treeview(preview_frame, height=4)
-        self.preview_tree.pack(fill="both", expand=True, padx=8, pady=8)
+        # Crear frame contenedor con scrollbars
+        preview_container = tk.Frame(preview_frame, bg="#f0f0f0")
+        preview_container.pack(fill="both", expand=True, padx=8, pady=8)
+        preview_container.grid_rowconfigure(0, weight=1)
+        preview_container.grid_columnconfigure(0, weight=1)
+        
+        # Treeview con scroll horizontal y vertical
+        self.preview_tree = ttk.Treeview(preview_container, height=4)
+        self.preview_tree.grid(row=0, column=0, sticky="nsew")
+        
+        # Scrollbar vertical
+        vsb_preview = ttk.Scrollbar(preview_container, orient="vertical", command=self.preview_tree.yview)
+        vsb_preview.grid(row=0, column=1, sticky="ns")
+        self.preview_tree.configure(yscrollcommand=vsb_preview.set)
+        
+        # Scrollbar horizontal
+        hsb_preview = ttk.Scrollbar(preview_container, orient="horizontal", command=self.preview_tree.xview)
+        hsb_preview.grid(row=1, column=0, sticky="ew")
+        self.preview_tree.configure(xscrollcommand=hsb_preview.set)
         
         # Estilos de filas alternadas como en verificación
         self.preview_tree.tag_configure('oddrow', background='#FFFFFF')

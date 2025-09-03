@@ -6,7 +6,7 @@ Esta es la aplicación principal con interfaz gráfica para automatizar el proce
 
 ### Estructura de Archivos
 ```
-2_Aplicacion_Envio_Nominas/
+sistema_nominas/
 ├── main.py                 # Punto de entrada principal
 ├── ui/                     # Interfaz de usuario
 │   ├── main_window.py      # Ventana principal y navegación
@@ -141,7 +141,7 @@ email_patterns = ['email', 'mail', 'correo', 'electronico']
 
 ### Testing Local
 ```bash
-cd 2_Aplicacion_Envio_Nominas
+cd sistema_nominas
 python main.py
 ```
 

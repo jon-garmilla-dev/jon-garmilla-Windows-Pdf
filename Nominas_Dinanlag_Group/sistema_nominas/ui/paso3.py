@@ -43,11 +43,19 @@ class Paso3(tk.Frame):
             show="headings"
         )
         
+        # Scrollbars vertical y horizontal
         vsb = ttk.Scrollbar(
             tree_frame, orient="vertical", command=self.tree.yview
         )
         vsb.grid(row=0, column=1, sticky="ns")
         self.tree.configure(yscrollcommand=vsb.set)
+        
+        hsb = ttk.Scrollbar(
+            tree_frame, orient="horizontal", command=self.tree.xview
+        )
+        hsb.grid(row=1, column=0, sticky="ew")
+        self.tree.configure(xscrollcommand=hsb.set)
+        
         self.tree.grid(row=0, column=0, sticky="nsew")
 
         headings = {
@@ -56,7 +64,7 @@ class Paso3(tk.Frame):
         }
         for col, width in headings.items():
             self.tree.heading(col, text=col)
-            self.tree.column(col, width=width, anchor="center")
+            self.tree.column(col, width=width, anchor="center", stretch=False, minwidth=width)
 
         # --- Estilos de Filas y Tags ---
         self.tree.tag_configure('sent', background='#d4edda')

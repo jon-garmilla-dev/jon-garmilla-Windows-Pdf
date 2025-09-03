@@ -31,7 +31,7 @@
 pip install -r requirements.txt
 
 # 2. Ejecutar aplicación
-cd 2_Aplicacion_Envio_Nominas
+cd sistema_nominas
 python main.py
 ```
 
@@ -79,7 +79,7 @@ El ejecutable se generará en `dist/EnviarNominas.exe`
 
 ```
 Nominas_Dinanlag_Group/
-├── 2_Aplicacion_Envio_Nominas/     # Aplicación principal
+├── sistema_nominas/               # Aplicación principal
 │   ├── main.py                     # Punto de entrada
 │   ├── ui/                         # Interfaz gráfica
 │   │   ├── main_window.py          # Ventana principal
@@ -93,7 +93,7 @@ Nominas_Dinanlag_Group/
 │       ├── file_handler.py         # Procesamiento archivos
 │       ├── settings.py             # Configuración
 │       └── security.py             # Cifrado credenciales
-├── 1_Entorno_Pruebas_Avanzadas/   # Generación datos prueba
+├── development_tools/             # Herramientas de desarrollo y testing
 ├── requirements.txt                # Dependencias
 ├── build.py                       # Script construcción
 ├── SECURITY.md                    # Documentación seguridad

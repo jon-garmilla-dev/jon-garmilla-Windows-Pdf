@@ -5,7 +5,7 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 NOMBRE_SCRIPT = "main.py"
 CARPETA_APP = os.path.join(SCRIPT_DIR, "sistema_nominas")
-NOMBRE_EXE = "EnviarNominas"
+NOMBRE_EXE = "EnviarNominas.exe"
 CARPETA_DIST = os.path.join(SCRIPT_DIR, "dist")
 
 
@@ -30,6 +30,7 @@ def construir_ejecutable():
         '--name', NOMBRE_EXE,
         '--clean',
         '--noconfirm',
+        '--windowed',  # Para Windows GUI (sin consola)
     ]
 
     # Ejecutar PyInstaller
@@ -42,13 +43,13 @@ def construir_ejecutable():
         
         # Crear las carpetas de datos dentro de la carpeta 'dist'
         os.makedirs(
-            os.path.join(CARPETA_DIST, "1_pdf_maestro_entrada"),
+            os.path.join(CARPETA_DIST, "pdfs_entrada"),
             exist_ok=True)
         os.makedirs(
             os.path.join(CARPETA_DIST, "2_nominas_individuales_encriptadas"),
             exist_ok=True)
         os.makedirs(
-            os.path.join(CARPETA_DIST, "3_datos_empleados"),
+            os.path.join(CARPETA_DIST, "employee_data"),
             exist_ok=True)
         
         print("✅ Carpetas de datos creadas.")

@@ -3,6 +3,7 @@ Módulo principal para el envío de nóminas por email - Version refactorizada.
 """
 import os
 import smtplib
+import ssl
 import time
 import socket
 import shutil
@@ -98,7 +99,8 @@ class RobustEmailSender:
                 self.server.set_debuglevel(0)  # 0=sin debug, 1=debug básico, 2=debug completo
                 
                 log_info("Iniciando TLS...")
-                self.server.starttls()
+                context = ssl.create_default_context()
+                self.server.starttls(context=context)
                 
                 log_info("Autenticando...")
                 self.server.login(email_origen, password)
@@ -282,6 +284,10 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
     """Worker que procesa y envía las nóminas en un hilo separado."""
     log_info("🚀 Iniciando el proceso de envío de nóminas.")
     
+    # IMPORTANTE: Siempre recargar configuración para asegurar descifrado
+    from .settings import load_settings
+    config_descifrada = load_settings()
+    
     # Estadísticas de envío
     stats = {
         'total': 0,
@@ -293,21 +299,22 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
     
     email_sender = None
     try:
-        email_origen = config.get('Email', 'email_origen')
-        password = config.get('Email', 'password')
+        email_origen = config_descifrada.get('Email', 'email_origen')
+        password = config_descifrada.get('Email', 'password')
         
-        log_debug(f"🔑 Email configurado: {email_origen}")
-        log_debug(f"🔑 Password configurado: {'Sí' if password else 'No'}")
+        log_info(f"🔑 Email configurado: {email_origen}")
+        log_info(f"🔑 Configuración cargada y descifrada correctamente")
         
         if not email_origen or not password:
             log_error("❌ Credenciales de email no configuradas")
             raise ValueError("❌ Credenciales de email no configuradas.")
 
         # Inicializar cliente robusto de email
-        email_sender = RobustEmailSender(config)
+        email_sender = RobustEmailSender(config_descifrada)
         
         # Establecer conexión con reintentos automáticos
-        log_debug("🔗 Intentando establecer conexión SMTP...")
+        log_info("🔗 Estableciendo conexión SMTP...")
+        
         if not email_sender.conectar(email_origen, password):
             log_error("❌ Falló la conexión SMTP después de reintentos")
             raise ConnectionError("❌ No se pudo establecer conexión SMTP después de varios intentos")
@@ -333,7 +340,7 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
         log_info(f"🚀 Iniciando procesamiento de {stats['total']} nóminas.")
         
         # Crear estructura organizada por mes/año
-        base_dir = config.get('Carpetas', 'salida', fallback='nominas_individuales')
+        base_dir = config_descifrada.get('Carpetas', 'salida', fallback='nominas_individuales')
         fecha_actual = datetime.now()
         
         # Carpeta principal: nominas_2025_09/
@@ -385,12 +392,12 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
                     raise ValueError(f"Formato de email inválido: {email_destino}")
                 
                 # 2. Procesar PDF individual
-                pdf_encriptado_path = procesar_pdf_individual(doc_maestro, tarea, output_dir, config)
+                pdf_encriptado_path = procesar_pdf_individual(doc_maestro, tarea, output_dir, config_descifrada)
                 
                 # 3. Preparar email
                 status_callback(f"pagina_{tarea['pagina']}", "Enviando email...", "processing")
                 
-                msg = crear_mensaje_email(config, email_origen, email_destino, 
+                msg = crear_mensaje_email(config_descifrada, email_origen, email_destino, 
                                         nombre, apellidos_empleado, pdf_encriptado_path)
                 
                 # 4. Enviar con reintentos automáticos
@@ -469,7 +476,7 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
         log_info("=" * 50)
         
         # Generar reporte final con TODAS las tareas originales (para mostrar PENDIENTES)
-        generar_reporte_final(stats, tareas, config)
+        generar_reporte_final(stats, tareas, config_descifrada)
         
         # Pasar estadísticas finales al callback
         log_info(f"📊 ENVIANDO ESTADÍSTICAS FINALES: enviados={stats['enviados']}, errores={stats['errores']}, total={stats['total']}")

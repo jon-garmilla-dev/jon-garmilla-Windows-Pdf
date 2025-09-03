@@ -17,7 +17,7 @@ def generar_nss():
 
 # Leer CSV existente
 empleados = []
-csv_path = '/home/jon.garmilla.dev/Dev-Lab/Pdf-Manipulation-Test/Nominas_Dinanlag_Group/sistema_nominas/3_datos_empleados/lista_empleados.csv'
+csv_path = '/home/jon.garmilla.dev/Dev-Lab/Pdf-Manipulation-Test/Nominas_Dinanlag_Group/sistema_nominas/employee_data/lista_empleados.csv'
 
 with open(csv_path, 'r', encoding='utf-8') as file:
     reader = csv.DictReader(file)
@@ -64,7 +64,7 @@ for col, width in enumerate(column_widths, 1):
     ws.column_dimensions[chr(64 + col)].width = width
 
 # Guardar archivo
-output_path = '/home/jon.garmilla.dev/Dev-Lab/Pdf-Manipulation-Test/Nominas_Dinanlag_Group/2_Aplicacion_Envio_Nominas/3_datos_empleados/DATOS_PARA_NOMINA.xlsx'
+output_path = '/home/jon.garmilla.dev/Dev-Lab/Pdf-Manipulation-Test/Nominas_Dinanlag_Group/sistema_nominas/employee_data/DATOS_PARA_NOMINA.xlsx'
 wb.save(output_path)
 
 print(f"✅ Archivo XLS creado: {output_path}")

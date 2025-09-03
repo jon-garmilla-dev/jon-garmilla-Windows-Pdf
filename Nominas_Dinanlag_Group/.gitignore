@@ -16,7 +16,7 @@ config.py
 *.xls
 
 # Directorio de nóminas individuales temporales
-/2_Aplicacion_Envio_Nominas/nominas_individuales/
+/sistema_nominas/nominas_individuales/
 
 # Caché de Python
 __pycache__/

@@ -1,6 +1,6 @@
-# 1. Entorno de Pruebas Avanzadas
+# Development Tools
 
-Este módulo se utiliza para generar datos de prueba masivos.
+Este módulo contiene herramientas para desarrollo y generación de datos de prueba.
 
 ## Flujo de Trabajo
 

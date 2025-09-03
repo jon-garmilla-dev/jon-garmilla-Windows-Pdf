@@ -138,10 +138,15 @@ class Paso2(tk.Frame):
             height=8
         )
         
-        # Scrollbar
+        # Scrollbars vertical y horizontal
         vsb = ttk.Scrollbar(tree_container, orient="vertical", command=self.tree.yview)
         vsb.grid(row=0, column=1, sticky="ns")
         self.tree.configure(yscrollcommand=vsb.set)
+        
+        hsb = ttk.Scrollbar(tree_container, orient="horizontal", command=self.tree.xview)
+        hsb.grid(row=1, column=0, sticky="ew")
+        self.tree.configure(xscrollcommand=hsb.set)
+        
         self.tree.grid(row=0, column=0, sticky="nsew")
 
         # Configurar columnas con anchos apropiados
@@ -151,7 +156,7 @@ class Paso2(tk.Frame):
         }
         for col, width in headings.items():
             self.tree.heading(col, text=col, anchor="w")
-            self.tree.column(col, width=width, anchor="w", stretch=True)
+            self.tree.column(col, width=width, anchor="w", stretch=False, minwidth=width)
 
         # Estilos de filas con colores Windows
         self.tree.tag_configure('ok', background='#d4edda', foreground='#155724')

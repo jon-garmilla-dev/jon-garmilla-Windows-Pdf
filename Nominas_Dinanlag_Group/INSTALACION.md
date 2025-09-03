@@ -80,7 +80,7 @@ pyinstaller      # Generar ejecutables
 
 ### 🧪 Testing Local
 ```bash
-cd 2_Aplicacion_Envio_Nominas
+cd sistema_nominas
 python main.py
 ```
 
