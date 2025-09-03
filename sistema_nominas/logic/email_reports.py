@@ -94,7 +94,11 @@ def generar_reporte_final(stats, todas_las_tareas_originales, config):
             plantilla_archivo = config.get('Formato', 'archivo_nomina', fallback='{nombre}_Nomina_{mes}_{año}.pdf')
             nombre_archivo = generar_nombre_archivo(plantilla_archivo, nombre_solo, apellidos_solo)
             
+            # Obtener la posición original si existe
+            posicion_original = tarea.get('posicion_original', 'N/A')
+            
             datos_reporte.append({
+                'POS.': posicion_original,  # Primera columna: posición original
                 'Página PDF': tarea['pagina'],
                 'D.N.I.': tarea['nif'], 
                 'Nombre': nombre_solo,
@@ -156,6 +160,7 @@ def _aplicar_formato_detalle(worksheet, datos_reporte):
     color_success = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")  # Verde claro
     color_error = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")    # Rojo claro  
     color_pending = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")  # Amarillo claro
+    color_manual = PatternFill(start_color="B7E3FF", end_color="B7E3FF", fill_type="solid")   # Azul claro
     color_cabecera = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid") # Gris claro
     font_cabecera = Font(bold=True)
     
@@ -186,7 +191,7 @@ def _aplicar_formato_detalle(worksheet, datos_reporte):
     # Solo aplicar validación y formato si hay datos
     if len(datos_reporte) > 0:
         _aplicar_validacion_estado(worksheet, datos_reporte)
-        _aplicar_formato_condicional(worksheet, datos_reporte, color_success, color_error, color_pending)
+        _aplicar_formato_condicional(worksheet, datos_reporte, color_success, color_error, color_pending, color_manual)
         _aplicar_proteccion_hoja(worksheet, datos_reporte)
 
 
@@ -194,37 +199,37 @@ def _aplicar_validacion_estado(worksheet, datos_reporte):
     """Aplica validación dropdown para la columna Estado Envío."""
     from openpyxl.worksheet.datavalidation import DataValidation
     
-    # Crear validación con las 3 opciones
+    # Crear validación con las 4 opciones
     dv = DataValidation(
         type="list",
-        formula1='"ENVIADO,ERROR,PENDIENTE"',
+        formula1='"ENVIADO,ERROR,PENDIENTE,MANUAL"',
         allow_blank=False
     )
-    dv.error = 'El valor debe ser: ENVIADO, ERROR o PENDIENTE'
+    dv.error = 'El valor debe ser: ENVIADO, ERROR, PENDIENTE o MANUAL'
     dv.errorTitle = 'Valor inválido'
     dv.prompt = 'Seleccione el estado del envío'
     dv.promptTitle = 'Estado del Envío'
     
-    # Aplicar validación a todas las celdas de la columna G (excepto cabecera)
-    rango_validacion = f"G2:G{len(datos_reporte) + 1}"
+    # Aplicar validación a todas las celdas de la columna H (excepto cabecera)
+    rango_validacion = f"H2:H{len(datos_reporte) + 1}"
     dv.add(rango_validacion)
     worksheet.add_data_validation(dv)
     
     log_info(f"[OK] Dropdown agregado a rango: {rango_validacion}")
 
 
-def _aplicar_formato_condicional(worksheet, datos_reporte, color_success, color_error, color_pending):
+def _aplicar_formato_condicional(worksheet, datos_reporte, color_success, color_error, color_pending, color_manual):
     """Aplica formato condicional para colorear filas según el estado."""
     from openpyxl.formatting.rule import Rule
     from openpyxl.styles.differential import DifferentialStyle
     
     # Rango completo de datos (todas las columnas, todas las filas con datos)  
-    rango_datos = f"A2:I{len(datos_reporte) + 1}"
+    rango_datos = f"A2:J{len(datos_reporte) + 1}"
     
     # Regla 1: ENVIADO = Verde
     regla_enviado = Rule(
         type="expression",
-        formula=[f'$G2="ENVIADO"'],  # Si columna G = "ENVIADO"
+        formula=[f'$H2="ENVIADO"'],  # Si columna H = "ENVIADO"
         dxf=DifferentialStyle(fill=color_success)
     )
     worksheet.conditional_formatting.add(rango_datos, regla_enviado)
@@ -232,7 +237,7 @@ def _aplicar_formato_condicional(worksheet, datos_reporte, color_success, color_
     # Regla 2: ERROR = Rojo  
     regla_error = Rule(
         type="expression", 
-        formula=[f'$G2="ERROR"'],  # Si columna G = "ERROR"
+        formula=[f'$H2="ERROR"'],  # Si columna H = "ERROR"
         dxf=DifferentialStyle(fill=color_error)
     )
     worksheet.conditional_formatting.add(rango_datos, regla_error)
@@ -240,10 +245,18 @@ def _aplicar_formato_condicional(worksheet, datos_reporte, color_success, color_
     # Regla 3: PENDIENTE = Amarillo
     regla_pendiente = Rule(
         type="expression",
-        formula=[f'$G2="PENDIENTE"'],  # Si columna G = "PENDIENTE" 
+        formula=[f'$H2="PENDIENTE"'],  # Si columna H = "PENDIENTE" 
         dxf=DifferentialStyle(fill=color_pending)
     )
     worksheet.conditional_formatting.add(rango_datos, regla_pendiente)
+    
+    # Regla 4: MANUAL = Azul claro
+    regla_manual = Rule(
+        type="expression",
+        formula=[f'$H2="MANUAL"'],  # Si columna H = "MANUAL"
+        dxf=DifferentialStyle(fill=color_manual)
+    )
+    worksheet.conditional_formatting.add(rango_datos, regla_manual)
     
     log_info(f"[OK] Formato condicional agregado a rango: {rango_datos}")
 
@@ -257,29 +270,29 @@ def _aplicar_proteccion_hoja(worksheet, datos_reporte):
         for cell in row:
             cell.protection = Protection(locked=True, hidden=False)
     
-    # 2. Desproteger solo la columna G "Estado Envío" (excepto cabecera)
+    # 2. Desproteger solo la columna H "Estado Envío" (excepto cabecera)
     for row_num in range(2, len(datos_reporte) + 2):  # Desde fila 2 hasta la última con datos
-        worksheet.cell(row=row_num, column=7).protection = Protection(locked=False, hidden=False)  # Columna G
+        worksheet.cell(row=row_num, column=8).protection = Protection(locked=False, hidden=False)  # Columna H
     
     # 3. Activar protección de la hoja (sin contraseña para facilidad de uso)
     worksheet.protection.sheet = True
     worksheet.protection.enable()
     
-    log_info("🔒 Protección aplicada: Solo columna 'Estado Envío' es editable")
+    log_info("[OK] Protección aplicada: Solo columna 'Estado Envío' es editable")
     
     # Agregar lógica empresarial: Auto-llenar observaciones
-    # Columna H = Observaciones, será oculta pero con fórmulas
+    # Columna I = Observaciones, será oculta pero con fórmulas
     for row_num in range(2, len(datos_reporte) + 2):
-        # Fórmula: Si G="ENVIADO" y H era "No procesado" → "Enviado manualmente"  
-        formula = f'=IF(AND(G{row_num}="ENVIADO",H{row_num}="No procesado"),"Enviado manualmente",H{row_num})'
-        worksheet.cell(row=row_num, column=8).value = formula
-        # Desproteger también columna H para que la fórmula funcione
-        worksheet.cell(row=row_num, column=8).protection = Protection(locked=False, hidden=True)
+        # Fórmula: Si H="MANUAL" → "Procesado manualmente", sino mantener observación original
+        formula = f'=IF(H{row_num}="MANUAL","Procesado manualmente",I{row_num})'
+        worksheet.cell(row=row_num, column=9).value = formula
+        # Desproteger también columna I para que la fórmula funcione
+        worksheet.cell(row=row_num, column=9).protection = Protection(locked=False, hidden=True)
     
-    # Ocultar columna H "Observaciones" pero mantener funcionalidad
-    worksheet.column_dimensions['H'].hidden = True
+    # Ocultar columna I "Observaciones" pero mantener funcionalidad
+    worksheet.column_dimensions['I'].hidden = True
     
-    log_info("📝 Lógica empresarial agregada: Auto-llenado de observaciones")
+    log_info("[OK] Lógica empresarial agregada: Auto-llenado de observaciones")
 
 
 def _crear_hoja_resumen(writer, stats, config):
@@ -359,7 +372,9 @@ def _crear_hoja_pendientes(writer, todas_las_tareas_originales):
     if empleados_pendientes:
         pendientes_data = []
         for tarea in empleados_pendientes:
+            posicion_original = tarea.get('posicion_original', 'N/A')
             pendientes_data.append({
+                'POS.': posicion_original,  # Primera columna: posición original
                 'Página PDF': tarea['pagina'],
                 'D.N.I.': tarea['nif'],
                 'Nombre': tarea['nombre'],

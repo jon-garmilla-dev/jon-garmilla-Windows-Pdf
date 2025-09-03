@@ -63,10 +63,16 @@ def analizar_archivos(pdf_path, empleados_path, columnas_map):
                 else:
                     apellidos_campo = ""
                 
+                # Obtener la posición original si existe
+                posicion_original = None
+                if "POS." in df.columns:
+                    posicion_original = info.iloc[0]["POS."]
+                
                 tarea.update({
                     "nombre": nombre_solo,  # Solo el nombre, sin apellidos
                     "apellidos": apellidos_campo,  # Apellidos separados
                     "email": info.iloc[0][columnas_map["email"]],
+                    "posicion_original": posicion_original,  # Mantener orden original
                     "status": "[OK]"
                 })
             else:
