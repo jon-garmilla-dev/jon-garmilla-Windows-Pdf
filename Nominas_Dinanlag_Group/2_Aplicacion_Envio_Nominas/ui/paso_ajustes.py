@@ -85,19 +85,46 @@ class PasoAjustes(tk.Frame):
         pdf_frame.configure(bg="#f0f0f0")
 
         tk.Label(
-            pdf_frame, text="Contraseña de Autor (para editar PDFs):",
-            font=("MS Sans Serif", 8), bg="#f0f0f0", fg="#000000"
+            pdf_frame, text="Contraseña de Edición de PDFs (obligatoria):",
+            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0", fg="#000000"
         ).grid(row=0, column=0, sticky="w", pady=8, padx=12)
         
-        self.autor_pass_entry = tk.Entry(pdf_frame, show="*", width=25, font=("MS Sans Serif", 8))
-        self.autor_pass_entry.grid(row=0, column=1, sticky="w", padx=(0, 12))
+        # Frame para entrada y botón de mostrar/ocultar
+        pass_frame = tk.Frame(pdf_frame, bg="#f0f0f0")
+        pass_frame.grid(row=0, column=1, sticky="ew", padx=(0, 12), pady=8)
+        pass_frame.grid_columnconfigure(0, weight=1)
+        
+        self.autor_pass_entry = tk.Entry(pass_frame, show="*", width=20, font=("MS Sans Serif", 8))
+        self.autor_pass_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
         self.autor_pass_entry.insert(0, self.controller.config.get(
             'PDF', 'password_autor', fallback=''))
-
+        
+        self.show_pass_btn = tk.Button(
+            pass_frame, text="👁", width=3,
+            font=("MS Sans Serif", 8), 
+            command=self.toggle_password_visibility,
+            relief="raised", bd=1, bg="#e8e8e8"
+        )
+        self.show_pass_btn.grid(row=0, column=1)
+        
+        self.pass_visible = False  # Estado de visibilidad
+        
+        # Descripción más clara
+        desc_frame = tk.Frame(pdf_frame, bg="#f0f0f0")
+        desc_frame.grid(row=1, column=0, columnspan=2, sticky="w", padx=12, pady=(0, 8))
+        
         tk.Label(
-            pdf_frame, text="(Opcional - para proteger edición)",
-            font=("MS Sans Serif", 7), bg="#f0f0f0", fg="#808080"
-        ).grid(row=1, column=0, columnspan=2, sticky="w", padx=12, pady=(0, 8))
+            desc_frame, text="• Los PDFs tendrán DOS contraseñas:",
+            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0", fg="#000080"
+        ).pack(anchor="w")
+        tk.Label(
+            desc_frame, text="  - Para ABRIR: NIF del empleado (automático)",
+            font=("MS Sans Serif", 7), bg="#f0f0f0", fg="#404040"
+        ).pack(anchor="w", padx=(15, 0))
+        tk.Label(
+            desc_frame, text="  - Para EDITAR: Esta contraseña (solo usted la sabe)",
+            font=("MS Sans Serif", 7), bg="#f0f0f0", fg="#404040"
+        ).pack(anchor="w", padx=(15, 0))
 
         pdf_frame.grid_columnconfigure(1, weight=1)
 
@@ -180,6 +207,17 @@ class PasoAjustes(tk.Frame):
         )
         self.btn_guardar.pack(side="left")
 
+    def toggle_password_visibility(self):
+        """Alterna la visibilidad de la contraseña de autor"""
+        if self.pass_visible:
+            self.autor_pass_entry.config(show="*")
+            self.show_pass_btn.config(text="👁")
+            self.pass_visible = False
+        else:
+            self.autor_pass_entry.config(show="")
+            self.show_pass_btn.config(text="🙈")
+            self.pass_visible = True
+
     def seleccionar_carpeta(self):
         """Abre diálogo para seleccionar carpeta de salida"""
         carpeta = filedialog.askdirectory(
@@ -203,7 +241,15 @@ class PasoAjustes(tk.Frame):
         if not self.pass_entry.get().strip():
             messagebox.showerror(
                 "Error de Configuración", 
-                "La contraseña es obligatoria."
+                "La contraseña de email es obligatoria."
+            )
+            return
+            
+        if not self.autor_pass_entry.get().strip():
+            messagebox.showerror(
+                "Error de Configuración",
+                "La contraseña de edición de PDFs es obligatoria.\n\n"
+                "Esta contraseña la necesitará para editar los PDFs generados."
             )
             return
 

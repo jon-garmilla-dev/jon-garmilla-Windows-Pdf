@@ -118,6 +118,10 @@ class AsistenteNominas(tk.Tk):
 
     def mostrar_frame(self, page_name):
         """Muestra un frame y resalta el paso actual con estilo Windows."""
+        # Validar si se puede acceder al paso
+        if not self._puede_acceder_paso(page_name):
+            return
+            
         if page_name == "Paso3":
             self.event_generate("<<ShowPaso3>>")
 
@@ -132,6 +136,44 @@ class AsistenteNominas(tk.Tk):
         
         frame = self.frames[page_name]
         frame.tkraise()
+        
+    def _puede_acceder_paso(self, page_name):
+        """Valida si se puede acceder al paso solicitado"""
+        if page_name in ["Paso1", "PasoAjustes"]:
+            return True
+            
+        # Para paso 2: necesita PDF y empleados seleccionados
+        if page_name == "Paso2":
+            if not self.pdf_path.get() or not self.empleados_path.get():
+                from tkinter import messagebox
+                messagebox.showwarning(
+                    "Paso Incompleto",
+                    "Debe completar la selección de archivos en el Paso 1\n"
+                    "antes de continuar a la verificación de datos."
+                )
+                return False
+            # También verificar que las columnas estén mapeadas
+            if not all(var.get() for var in self.mapa_columnas.values()):
+                from tkinter import messagebox
+                messagebox.showwarning(
+                    "Configuración Incompleta", 
+                    "Debe asignar las columnas en el Paso 1\n"
+                    "antes de continuar a la verificación."
+                )
+                return False
+        
+        # Para paso 3: necesita verificación completada
+        if page_name == "Paso3":
+            if not hasattr(self, 'tareas_verificacion') or not self.tareas_verificacion:
+                from tkinter import messagebox
+                messagebox.showwarning(
+                    "Verificación Incompleta",
+                    "Debe completar la verificación de datos en el Paso 2\n"
+                    "antes de continuar al envío de correos."
+                )
+                return False
+                
+        return True
 
     def abrir_ajustes(self):
         self.mostrar_frame("PasoAjustes")
