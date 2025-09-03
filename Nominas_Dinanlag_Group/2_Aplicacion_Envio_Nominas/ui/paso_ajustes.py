@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import os
+import threading
+import smtplib
 from logic.settings import save_settings
 from logic.formato_archivos import generar_ejemplo_archivo, validar_plantilla
 
@@ -73,6 +75,15 @@ class PasoAjustes(tk.Frame):
         self.pass_entry.grid(row=3, column=1, sticky="ew", padx=(0, 12))
         self.pass_entry.insert(0, self.controller.config.get(
             'Email', 'password', fallback=''))
+        
+        # Botón de Test Conexión
+        self.btn_test_smtp = tk.Button(
+            smtp_frame, text="Test Conexión",
+            command=self.test_conexion_smtp,
+            font=("MS Sans Serif", 8), width=15, height=1,
+            relief="raised", bd=2, bg="#e0e0e0"
+        )
+        self.btn_test_smtp.grid(row=4, column=1, sticky="e", pady=8, padx=(0, 12))
         
         smtp_frame.grid_columnconfigure(1, weight=1)
 
@@ -433,3 +444,117 @@ class PasoAjustes(tk.Frame):
         self.formato_archivo_entry.delete(0, 'end')
         self.formato_archivo_entry.insert(0, formato)
         self.actualizar_ejemplo_archivo()
+    
+    def test_conexion_smtp(self):
+        """Testea la conexión SMTP con las credenciales actuales."""
+        email = self.email_entry.get().strip()
+        password = self.pass_entry.get().strip()
+        
+        if not email or not password:
+            messagebox.showwarning(
+                "Campos incompletos",
+                "Por favor, complete email y contraseña antes de probar la conexión."
+            )
+            return
+        
+        # Mostrar ventana de progreso
+        progress_window = tk.Toplevel(self)
+        progress_window.title("Test de Conexión SMTP")
+        progress_window.geometry("400x150")
+        progress_window.resizable(False, False)
+        progress_window.configure(bg="#f0f0f0")
+        progress_window.transient(self)
+        progress_window.grab_set()
+        
+        # Centrar ventana
+        progress_window.geometry("+{}+{}".format(
+            self.winfo_rootx() + 50, self.winfo_rooty() + 50))
+        
+        tk.Label(
+            progress_window, 
+            text="Probando conexión SMTP...",
+            font=("MS Sans Serif", 10, "bold"),
+            bg="#f0f0f0"
+        ).pack(pady=20)
+        
+        status_label = tk.Label(
+            progress_window,
+            text="Conectando a smtp.gmail.com:587...",
+            font=("MS Sans Serif", 8),
+            bg="#f0f0f0"
+        )
+        status_label.pack(pady=10)
+        
+        # Deshabilitar botón durante el test
+        self.btn_test_smtp.config(state="disabled", text="Probando...")
+        
+        def test_smtp_thread():
+            try:
+                # Actualizar estado en UI
+                def update_status(mensaje):
+                    if progress_window.winfo_exists():
+                        status_label.config(text=mensaje)
+                        progress_window.update()
+                
+                progress_window.after(0, lambda: update_status("Conectando a smtp.gmail.com:587..."))
+                server = smtplib.SMTP('smtp.gmail.com', 587)
+                
+                progress_window.after(0, lambda: update_status("Iniciando TLS..."))
+                server.starttls()
+                
+                progress_window.after(0, lambda: update_status("Autenticando..."))
+                server.login(email, password)
+                
+                progress_window.after(0, lambda: update_status("¡Conexión exitosa!"))
+                server.quit()
+                
+                # Mostrar resultado exitoso
+                def show_success():
+                    progress_window.destroy()
+                    self.btn_test_smtp.config(state="normal", text="Test Conexión")
+                    messagebox.showinfo(
+                        "Test Exitoso",
+                        f"✓ Conexión SMTP exitosa\n\n"
+                        f"Email: {email}\n"
+                        f"Servidor: smtp.gmail.com:587\n"
+                        f"Estado: Conectado correctamente\n\n"
+                        f"¡Las credenciales son válidas para el envío!"
+                    )
+                
+                progress_window.after(100, show_success)
+                
+            except smtplib.SMTPAuthenticationError as e:
+                def show_auth_error():
+                    progress_window.destroy()
+                    self.btn_test_smtp.config(state="normal", text="Test Conexión")
+                    messagebox.showerror(
+                        "Error de Autenticación",
+                        f"✗ Credenciales rechazadas\n\n"
+                        f"Error: {e}\n\n"
+                        f"Soluciones:\n"
+                        f"• Verificar email y contraseña\n"
+                        f"• Usar contraseña de aplicación de Gmail\n"
+                        f"• Activar verificación en 2 pasos\n"
+                        f"• Generar nueva contraseña de aplicación"
+                    )
+                
+                progress_window.after(100, show_auth_error)
+                
+            except Exception as e:
+                def show_error():
+                    progress_window.destroy()
+                    self.btn_test_smtp.config(state="normal", text="Test Conexión")
+                    messagebox.showerror(
+                        "Error de Conexión",
+                        f"✗ Fallo en la conexión SMTP\n\n"
+                        f"Error: {str(e)}\n\n"
+                        f"Posibles causas:\n"
+                        f"• Problema de red/internet\n"
+                        f"• Firewall bloqueando puerto 587\n"
+                        f"• Servidor SMTP no disponible"
+                    )
+                
+                progress_window.after(100, show_error)
+        
+        # Ejecutar test en hilo separado
+        threading.Thread(target=test_smtp_thread, daemon=True).start()

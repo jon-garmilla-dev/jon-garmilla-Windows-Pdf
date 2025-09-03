@@ -24,3 +24,9 @@ __pycache__/
 
 # Archivos de entorno de desarrollo
 .env
+
+# Archivos de log
+*.log
+logs/
+*.txt
+resumen_proceso.txt

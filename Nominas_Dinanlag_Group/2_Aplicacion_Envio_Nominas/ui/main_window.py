@@ -136,6 +136,35 @@ class AsistenteNominas(tk.Tk):
         
         frame = self.frames[page_name]
         frame.tkraise()
+    
+    def bloquear_navegacion_lateral(self):
+        """Bloquea la navegación del panel lateral durante envío."""
+        for name, label in self.pasos_labels.items():
+            label.config(
+                state="disabled",
+                fg="#808080",  # Gris desactivado
+                cursor=""
+            )
+            # Desenlazar eventos de clic temporalmente
+            label.unbind("<Button-1>")
+            label.unbind("<Enter>")
+            label.unbind("<Leave>")
+    
+    def desbloquear_navegacion_lateral(self):
+        """Desbloquea la navegación del panel lateral después del envío."""
+        for name, label in self.pasos_labels.items():
+            label.config(
+                state="normal",
+                fg="#000000",  # Negro normal
+                cursor="hand2"
+            )
+            # Reenlazar eventos de clic
+            label.bind(
+                "<Button-1>",
+                lambda e, page_name=name: self.mostrar_frame(page_name)
+            )
+            label.bind("<Enter>", lambda e: self._on_hover_enter(e.widget))
+            label.bind("<Leave>", lambda e: self._on_hover_leave(e.widget))
         
     def _puede_acceder_paso(self, page_name):
         """Valida si se puede acceder al paso solicitado"""

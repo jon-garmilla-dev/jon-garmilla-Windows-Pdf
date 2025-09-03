@@ -142,7 +142,7 @@ class PasoCompletado(tk.Frame):
         )
         self.btn_nuevo.pack(side="left")
 
-    def actualizar_estadisticas(self, enviados, errores, total, tiempo_inicio):
+    def actualizar_estadisticas(self, enviados, errores, total, tiempo_inicio, stats_extra=None):
         """Actualiza las estadísticas mostradas"""
         self.estadisticas = {
             "enviados": enviados,
@@ -150,6 +150,9 @@ class PasoCompletado(tk.Frame):
             "total": total,
             "tiempo_inicio": tiempo_inicio
         }
+        
+        # Guardar estadísticas extra (rutas de carpetas y reportes)
+        self.stats_extra = stats_extra or {}
         
         self.enviados_label.config(text=str(enviados))
         self.errores_label.config(text=str(errores))
@@ -179,38 +182,56 @@ class PasoCompletado(tk.Frame):
                 fg="#804000"
             )
         
-        # Actualizar información adicional con formato estilo Windows
-        carpeta_salida = self.controller.config.get('Carpetas', 'salida', fallback='nominas_individuales')
+        # Actualizar información adicional con estructura organizada
+        carpeta_mes = self.stats_extra.get('carpeta_mes')
+        carpeta_pdfs = self.stats_extra.get('carpeta_pdfs')
+        archivo_reporte = self.stats_extra.get('archivo_reporte_excel')
         
-        # Formatear la ruta estilo Windows
-        carpeta_display = carpeta_salida.replace('/', '\\') if '/' in carpeta_salida else carpeta_salida
-        if not carpeta_display.startswith('\\') and ':' not in carpeta_display:
-            carpeta_display = f"📁 {carpeta_display}"
+        if carpeta_mes and carpeta_pdfs:
+            # Mostrar nueva estructura organizada
+            info_text = f"Proceso completado exitosamente\n\n"
+            info_text += f"Carpeta del mes: {os.path.basename(carpeta_mes)}\n"
+            info_text += f"PDFs individuales: /pdfs_individuales/\n"
+            if archivo_reporte:
+                info_text += f"Reporte Excel: {os.path.basename(archivo_reporte)}\n"
+            info_text += f"Resumen TXT generado automaticamente"
+        else:
+            # Fallback a comportamiento anterior
+            carpeta_salida = self.controller.config.get('Carpetas', 'salida', fallback='nominas_individuales')
+            carpeta_display = carpeta_salida.replace('/', '\\') if '/' in carpeta_salida else carpeta_salida
+            if not carpeta_display.startswith('\\') and ':' not in carpeta_display:
+                carpeta_display = f"📁 {carpeta_display}"
+            info_text = f"Los archivos PDF individuales se han guardado en:\n{carpeta_display}"
         
-        self.info_label.config(
-            text=f"Los archivos PDF individuales se han guardado en:\n{carpeta_display}"
-        )
+        self.info_label.config(text=info_text)
 
     def abrir_carpeta_salida(self):
         """Abre la carpeta donde se guardaron los PDFs"""
-        carpeta_salida = self.controller.config.get('Carpetas', 'salida', fallback='nominas_individuales')
+        # Priorizar la carpeta del mes si existe
+        carpeta_abrir = getattr(self, 'stats_extra', {}).get('carpeta_mes')
+        
+        if not carpeta_abrir:
+            # Fallback a configuración anterior
+            carpeta_abrir = self.controller.config.get('Carpetas', 'salida', fallback='nominas_individuales')
         
         try:
-            if os.path.exists(carpeta_salida):
+            if os.path.exists(carpeta_abrir):
                 # Intentar abrir con el explorador del sistema
                 import subprocess
                 import sys
                 
                 if sys.platform == "win32":
-                    os.startfile(carpeta_salida)
+                    os.startfile(carpeta_abrir)
                 elif sys.platform == "darwin":
-                    subprocess.run(["open", carpeta_salida])
+                    subprocess.run(["open", carpeta_abrir])
                 else:
-                    subprocess.run(["xdg-open", carpeta_salida])
+                    subprocess.run(["xdg-open", carpeta_abrir])
+                    
+                print(f"📂 Abriendo carpeta: {carpeta_abrir}")
             else:
                 messagebox.showwarning(
                     "Carpeta no encontrada",
-                    f"La carpeta no existe:\n{carpeta_salida}"
+                    f"La carpeta no existe:\n{carpeta_abrir}"
                 )
         except Exception as e:
             messagebox.showerror(
