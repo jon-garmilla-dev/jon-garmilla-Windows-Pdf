@@ -65,8 +65,12 @@ class NominaLogger:
         """Retorna el logger configurado."""
         return self._logger
 
-    def _limpiar_logs_antiguos(self, logs_dir, dias_a_mantener=7):
-        """Elimina archivos de log más antiguos que un número de días."""
+    def _limpiar_logs_antiguos(self, logs_dir, dias_a_mantener=60):
+        """Elimina archivos de log más antiguos que un número de días.
+        
+        Por defecto mantiene 60 días (2 meses) para uso mensual de nóminas.
+        Esto permite revisar logs del mes anterior en caso de problemas.
+        """
         try:
             limite_segundos = dias_a_mantener * 24 * 60 * 60
             limite_tiempo = time.time() - limite_segundos

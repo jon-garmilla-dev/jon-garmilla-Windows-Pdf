@@ -16,6 +16,8 @@ except Exception as e:
     PIL_AVAILABLE = False
     print(f"[DEBUG] Error cargando PIL: {e}")
 
+from utils.sound_manager import play_warning_sound, play_error_sound
+
 
 class Paso2(tk.Frame):
     def __init__(self, parent, controller):
@@ -308,6 +310,10 @@ class Paso2(tk.Frame):
         # Actualizar estadísticas
         self.actualizar_estadisticas(total, ok_count, error_count + warning_count)
         
+        # Sonido de advertencia si hay problemas detectados
+        if (error_count + warning_count) > 0 and total > 0:
+            play_warning_sound()
+        
         # Habilitar botón siguiente si hay al menos uno OK
         if ok_count > 0:
             self.btn_siguiente.config(state="normal")
@@ -560,11 +566,13 @@ class Paso2(tk.Frame):
         def guardar():
             # Validar campos
             if not var_nif.get().strip() or not var_nombre.get().strip() or not var_email.get().strip():
+                play_error_sound()
                 messagebox.showerror("Error", "NIF, Nombre y Email son obligatorios. Apellidos es opcional.")
                 return
                 
             # Validar email básico
             if "@" not in var_email.get() or "." not in var_email.get().split("@")[-1]:
+                play_error_sound()
                 messagebox.showerror("Error", "El email no tiene un formato válido.")
                 return
             

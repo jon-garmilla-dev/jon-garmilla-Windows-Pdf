@@ -161,15 +161,19 @@ class PasoAjustes(tk.Frame):
         tk.Label(cred_group, text="Contraseña:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
             row=1, column=0, sticky="w", pady=8, padx=12)
         
-        self.password_entry = tk.Entry(cred_group, width=25, font=("MS Sans Serif", 8), show="*")
-        self.password_entry.grid(row=1, column=1, sticky="w", pady=8, padx=(0, 10))
+        # Frame para contraseña + botón ojo
+        password_frame = tk.Frame(cred_group, bg="#f0f0f0")
+        password_frame.grid(row=1, column=1, sticky="w", pady=8, padx=(0, 10))
+        
+        self.password_entry = tk.Entry(password_frame, width=20, font=("MS Sans Serif", 8), show="*")
+        self.password_entry.pack(side="left")
         self.password_entry.insert(
             0, self.controller.config.get('Email', 'password', fallback=''))
         
         self.show_password = tk.BooleanVar()
-        toggle_btn = tk.Button(cred_group, text="Ver", command=self._toggle_password,
-                              font=("MS Sans Serif", 8), width=3, relief="raised", bd=1)
-        toggle_btn.grid(row=1, column=2, sticky="w", pady=8, padx=(5, 0))
+        toggle_btn = tk.Button(password_frame, text="👁", command=self._toggle_password,
+                              font=("MS Sans Serif", 10), width=2, relief="raised", bd=1)
+        toggle_btn.pack(side="left", padx=(20, 0))
         
         cred_group.grid_columnconfigure(1, weight=1)
         
@@ -292,15 +296,19 @@ Departamento de Recursos Humanos''')
         tk.Label(basico_group, text="Contraseña para editar PDFs:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
             row=1, column=0, sticky="w", pady=8, padx=12)
         
-        self.pdf_password_entry = tk.Entry(basico_group, width=20, font=("MS Sans Serif", 8), show="*")
-        self.pdf_password_entry.grid(row=1, column=1, sticky="w", pady=8, padx=(0, 10))
+        # Frame para contraseña PDF + botón ojo
+        pdf_password_frame = tk.Frame(basico_group, bg="#f0f0f0")
+        pdf_password_frame.grid(row=1, column=1, sticky="w", pady=8, padx=(0, 10))
+        
+        self.pdf_password_entry = tk.Entry(pdf_password_frame, width=15, font=("MS Sans Serif", 8), show="*")
+        self.pdf_password_entry.pack(side="left")
         self.pdf_password_entry.insert(
             0, self.controller.config.get('PDF', 'password_autor', fallback=''))
         
         self.show_pdf_password = tk.BooleanVar()
-        pdf_toggle_btn = tk.Button(basico_group, text="Ver", command=self._toggle_pdf_password,
-                                  font=("MS Sans Serif", 8), width=3, relief="raised", bd=1)
-        pdf_toggle_btn.grid(row=1, column=2, sticky="w", pady=8, padx=(5, 0))
+        pdf_toggle_btn = tk.Button(pdf_password_frame, text="👁", command=self._toggle_pdf_password,
+                                  font=("MS Sans Serif", 10), width=2, relief="raised", bd=1)
+        pdf_toggle_btn.pack(side="left", padx=(20, 0))
         
         # Configuración de Carpetas y Archivos
         carpetas_group = tk.LabelFrame(

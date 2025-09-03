@@ -6,6 +6,7 @@ import queue
 from datetime import datetime
 from logic.email_sender import enviar_nominas_worker
 from logic.formato_archivos import generar_nombre_archivo
+from utils.sound_manager import play_success_sound, play_error_sound, play_warning_sound
 
 
 class Paso3(tk.Frame):
@@ -310,7 +311,18 @@ class Paso3(tk.Frame):
     
     def mostrar_pagina_completado(self):
         """Muestra la página de completado con estadísticas actualizadas."""
-        print(f"🔍 DEBUG: Mostrando página completado con estadísticas: enviados={self.estadisticas['enviados']}, errores={self.estadisticas['errores']}")
+        print(f"DEBUG: Mostrando página completado con estadísticas: enviados={self.estadisticas['enviados']}, errores={self.estadisticas['errores']}")
+        
+        # Reproducir sonido según resultado
+        if self.estadisticas['errores'] == 0:
+            # Éxito total - sonido de éxito
+            play_success_sound()
+        elif self.estadisticas['enviados'] > 0:
+            # Envíos parciales - sonido de advertencia
+            play_warning_sound()
+        else:
+            # Falló todo - sonido de error
+            play_error_sound()
         
         # Mostrar página de completado con estadísticas
         completado_frame = self.controller.frames["PasoCompletado"]

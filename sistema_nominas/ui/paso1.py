@@ -5,6 +5,7 @@ import fitz  # PyMuPDF
 from logic.file_handler import (
     leer_cabeceras_empleados, leer_archivo_empleados, analizar_archivos
 )
+from utils.sound_manager import play_error_sound
 
 
 class Paso1(tk.Frame):
@@ -485,6 +486,7 @@ class Paso1(tk.Frame):
         )
         
         if "error" in res:
+            play_error_sound()
             self.controller.show_centered_messagebox("error", "Error de Análisis", res["error"])
             return
             
