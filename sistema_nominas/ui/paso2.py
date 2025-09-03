@@ -867,12 +867,12 @@ class Paso2(tk.Frame):
                 carpeta = os.path.dirname(pdf_path)
                 
                 if sys.platform == "win32":
-                    subprocess.run(['explorer', carpeta], shell=False)
+                    subprocess.Popen(['explorer', carpeta])
                 elif sys.platform == "darwin":
-                    subprocess.run(["open", carpeta], shell=False)
+                    subprocess.Popen(["open", carpeta])
                 else:
-                    # Linux - evitar problemas con shell
-                    subprocess.run(["xdg-open", carpeta], shell=False, timeout=5)
+                    # Linux - ejecutar en background sin timeout
+                    subprocess.Popen(["xdg-open", carpeta])
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo abrir la carpeta:\n{e}")
         

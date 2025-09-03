@@ -386,6 +386,11 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
         os.makedirs(output_dir_enviados, exist_ok=True)
         os.makedirs(output_dir_pendientes, exist_ok=True)
         
+        # DEBUG: Verificar que las carpetas se crearon
+        log_info(f"[DEBUG] Carpeta enviados creada: {os.path.exists(output_dir_enviados)}")
+        log_info(f"[DEBUG] Carpeta pendientes creada: {os.path.exists(output_dir_pendientes)}")
+        log_info(f"[DEBUG] Permisos carpeta pendientes: {oct(os.stat(output_dir_pendientes).st_mode)[-3:]}")
+        
         # Guardar carpetas para el reporte
         stats['carpeta_mes'] = carpeta_mes
         stats['carpeta_pdfs_enviados'] = output_dir_enviados
@@ -553,46 +558,91 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
 
 
 def _generar_pdfs_pendientes(doc_maestro, tareas, output_dir_pendientes, config, stats):
-    """Genera PDFs sin cifrado para tareas que no se pudieron enviar automáticamente."""
-    # Filtrar tareas pendientes (las que NO son [OK] o las que fallaron en envío)
-    tareas_pendientes = [t for t in tareas if t['status'] != '[OK]']
+    """Genera PDFs sin cifrado para tareas que no se enviaron exitosamente."""
+    # DEBUG: Mostrar información de todas las tareas
+    log_info(f"[DEBUG] Total de tareas recibidas: {len(tareas)}")
+    log_info(f"[DEBUG] Stats enviados: {stats.get('enviados', 0)}")
+    log_info(f"[DEBUG] Stats errores: {stats.get('errores', 0)}")
+    log_info(f"[DEBUG] Stats total: {stats.get('total', 0)}")
+    
+    # Filtrar tareas que ESTABAN listas para enviar pero NO se enviaron exitosamente
+    tareas_listas = [t for t in tareas if t['status'] == '[OK]']  # Las que podían enviarse
+    
+    # Contar PDFs realmente creados en carpeta enviados (más preciso que stats)
+    carpeta_enviados = stats.get('carpeta_pdfs_enviados', '')
+    pdfs_ya_creados = 0
+    if os.path.exists(carpeta_enviados):
+        pdfs_ya_creados = len([f for f in os.listdir(carpeta_enviados) if f.endswith('.pdf')])
+    
+    log_info(f"[DEBUG] Tareas listas para envío: {len(tareas_listas)}")
+    log_info(f"[DEBUG] PDFs ya creados físicamente: {pdfs_ya_creados}")
+    log_info(f"[DEBUG] Stats enviados (solo emails): {stats.get('enviados', 0)}")
+    
+    # Las pendientes son las que estaban OK pero no tienen PDF creado
+    tareas_pendientes = tareas_listas[pdfs_ya_creados:]  # Las que no se procesaron
+    
+    # También agregar las que tenían errores originales para procesamiento manual
+    tareas_con_errores = [t for t in tareas if t['status'] != '[OK]']
+    tareas_pendientes.extend(tareas_con_errores)
+    
+    log_info(f"[DEBUG] Tareas filtradas como pendientes: {len(tareas_pendientes)}")
+    if tareas_pendientes:
+        log_info("[DEBUG] Ejemplos de tareas pendientes:")
+        for i, tarea in enumerate(tareas_pendientes[:3]):
+            log_info(f"[DEBUG]   - Página {tarea.get('pagina', 'N/A')}: {tarea['status']}")
     
     if not tareas_pendientes:
         log_info("[OK] No hay PDFs pendientes para generar")
         return
     
     log_info(f"Generando {len(tareas_pendientes)} PDFs pendientes (sin cifrar)...")
+    log_info(f"[DEBUG] Directorio destino: {output_dir_pendientes}")
     pdfs_creados = 0
     
     try:
-        for tarea in tareas_pendientes:
+        for i, tarea in enumerate(tareas_pendientes):
             try:
+                log_info(f"[DEBUG] Procesando tarea pendiente {i+1}/{len(tareas_pendientes)}")
+                
                 # Generar UUIDs para nombre y apellido
                 uuid_nombre = generar_uuid_corto()
                 uuid_apellido = generar_uuid_corto()
+                log_info(f"[DEBUG] UUIDs generados: {uuid_nombre}_{uuid_apellido}")
                 
                 # Generar nombre de archivo con UUIDs
                 plantilla_archivo = config.get('Formato', 'archivo_nomina', 
                                               fallback='{nombre}_{apellido}_Nomina_{mes}_{año}.pdf')
                 nombre_archivo = generar_nombre_archivo(plantilla_archivo, uuid_nombre, uuid_apellido)
+                log_info(f"[DEBUG] Nombre archivo: {nombre_archivo}")
                 
                 # Crear PDF individual SIN cifrado
                 ruta_pdf = os.path.join(output_dir_pendientes, nombre_archivo)
+                log_info(f"[DEBUG] Ruta completa: {ruta_pdf}")
                 
                 # Usar fitz para crear el PDF individual
                 import fitz
                 doc_individual = fitz.open()
+                log_info(f"[DEBUG] Insertando página {tarea['pagina']} (índice {tarea['pagina'] - 1})")
                 doc_individual.insert_pdf(doc_maestro, from_page=tarea['pagina'] - 1, to_page=tarea['pagina'] - 1)
                 
                 # Guardar SIN contraseñas de apertura o edición
                 doc_individual.save(ruta_pdf)
                 doc_individual.close()
                 
+                # Verificar que el archivo se creó
+                if os.path.exists(ruta_pdf):
+                    tamaño = os.path.getsize(ruta_pdf)
+                    log_info(f"[DEBUG] Archivo creado exitosamente: {tamaño} bytes")
+                else:
+                    log_error(f"[ERROR] El archivo no se creó: {ruta_pdf}")
+                    continue
+                
                 pdfs_creados += 1
-                log_info(f"PDF pendiente: {nombre_archivo} (Página {tarea['pagina']}, Motivo: {tarea['status']})")
+                log_info(f"[OK] PDF pendiente: {nombre_archivo} (Página {tarea['pagina']}, Motivo: {tarea['status']})")
                 
             except Exception as e:
                 log_error(f"[ERROR] Error creando PDF pendiente para página {tarea['pagina']}: {e}")
+                log_debug("Stack trace del error:", exc_info=True)
                 
     except Exception as e:
         log_error(f"[ERROR] Error general generando PDFs pendientes: {e}")

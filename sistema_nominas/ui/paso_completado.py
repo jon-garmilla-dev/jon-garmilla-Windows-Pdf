@@ -223,11 +223,11 @@ class PasoCompletado(tk.Frame):
                 if sys.platform == "win32":
                     os.startfile(carpeta_abrir)
                 elif sys.platform == "darwin":
-                    subprocess.run(["open", carpeta_abrir])
+                    subprocess.Popen(["open", carpeta_abrir])
                 else:
-                    subprocess.run(["xdg-open", carpeta_abrir])
+                    subprocess.Popen(["xdg-open", carpeta_abrir])
                     
-                print(f"📂 Abriendo carpeta: {carpeta_abrir}")
+                print(f"Abriendo carpeta: {carpeta_abrir}")
             else:
                 messagebox.showwarning(
                     "Carpeta no encontrada",
