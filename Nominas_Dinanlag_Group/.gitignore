@@ -1,6 +1,8 @@
 # Archivos de configuración sensibles
 settings.ini
+settings.ini.backup
 config.py
+.secret_key
 
 # Directorios de construcción de PyInstaller
 /dist/

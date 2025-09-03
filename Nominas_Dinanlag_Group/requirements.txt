@@ -17,3 +17,6 @@ pyinstaller
 
 # Requerido por pandas para leer archivos de Excel (.xlsx)
 openpyxl
+
+# Usado para cifrado de credenciales sensibles
+cryptography
