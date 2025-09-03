@@ -4,7 +4,7 @@ import os
 # --- CONFIGURACIÓN ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 NOMBRE_SCRIPT = "main.py"
-CARPETA_APP = os.path.join(SCRIPT_DIR, "2_Aplicacion_Envio_Nominas")
+CARPETA_APP = os.path.join(SCRIPT_DIR, "sistema_nominas")
 NOMBRE_EXE = "EnviarNominas"
 CARPETA_DIST = os.path.join(SCRIPT_DIR, "dist")
 

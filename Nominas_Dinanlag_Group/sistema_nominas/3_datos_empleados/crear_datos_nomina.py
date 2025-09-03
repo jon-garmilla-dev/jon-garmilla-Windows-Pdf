@@ -17,7 +17,7 @@ def generar_nss():
 
 # Leer CSV existente
 empleados = []
-csv_path = '/home/jon.garmilla.dev/Dev-Lab/Pdf-Manipulation-Test/Nominas_Dinanlag_Group/2_Aplicacion_Envio_Nominas/3_datos_empleados/lista_empleados.csv'
+csv_path = '/home/jon.garmilla.dev/Dev-Lab/Pdf-Manipulation-Test/Nominas_Dinanlag_Group/sistema_nominas/3_datos_empleados/lista_empleados.csv'
 
 with open(csv_path, 'r', encoding='utf-8') as file:
     reader = csv.DictReader(file)
