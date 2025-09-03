@@ -156,14 +156,25 @@ class Paso1(tk.Frame):
         self.actualizar_visibilidad_detalles()
 
     def seleccionar_pdf(self):
+        # Usar última ruta guardada si existe
+        inicial_dir = self.controller.config.get('UltimosArchivos', 'pdf_maestro', fallback=self.controller.last_dir)
+        if inicial_dir and os.path.exists(os.path.dirname(inicial_dir)):
+            inicial_dir = os.path.dirname(inicial_dir)
+        else:
+            inicial_dir = self.controller.last_dir
+            
         path = filedialog.askopenfilename(
             title="Seleccionar PDF Maestro",
             filetypes=[("Archivos PDF", "*.pdf")],
-            initialdir=self.controller.last_dir
+            initialdir=inicial_dir
         )
         if path:
             self.controller.pdf_path.set(path)
             self.controller.last_dir = os.path.dirname(path)
+            
+            # Guardar en configuración para próxima vez
+            self.controller.config.set('UltimosArchivos', 'pdf_maestro', path)
+            self.controller.guardar_configuracion()
             
             # Actualizar campo de texto
             self.pdf_path_entry.config(state="normal")
@@ -175,17 +186,28 @@ class Paso1(tk.Frame):
             self.verificar_estado()
 
     def seleccionar_empleados(self):
+        # Usar última ruta guardada si existe
+        inicial_dir = self.controller.config.get('UltimosArchivos', 'excel_empleados', fallback=self.controller.last_dir)
+        if inicial_dir and os.path.exists(os.path.dirname(inicial_dir)):
+            inicial_dir = os.path.dirname(inicial_dir)
+        else:
+            inicial_dir = self.controller.last_dir
+            
         path = filedialog.askopenfilename(
             title="Seleccionar Archivo de Empleados",
             filetypes=[
                 ("Archivos Excel", "*.xlsx *.xls"),
                 ("Archivos CSV", "*.csv")
             ],
-            initialdir=self.controller.last_dir
+            initialdir=inicial_dir
         )
         if path:
             self.controller.empleados_path.set(path)
             self.controller.last_dir = os.path.dirname(path)
+            
+            # Guardar en configuración para próxima vez
+            self.controller.config.set('UltimosArchivos', 'excel_empleados', path)
+            self.controller.guardar_configuracion()
             
             # Actualizar campo de texto
             self.empleados_path_entry.config(state="normal")

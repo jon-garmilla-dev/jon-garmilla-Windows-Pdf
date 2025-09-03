@@ -213,3 +213,11 @@ class AsistenteNominas(tk.Tk):
 
     def abrir_ajustes(self):
         self.mostrar_frame("PasoAjustes")
+        
+    def guardar_configuracion(self):
+        """Guarda la configuración actual en el archivo settings.ini"""
+        try:
+            from logic.settings import save_settings
+            save_settings(self.config)
+        except Exception as e:
+            print(f"Error guardando configuración: {e}")
