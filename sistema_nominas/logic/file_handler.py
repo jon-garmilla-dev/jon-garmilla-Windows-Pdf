@@ -49,7 +49,7 @@ def analizar_archivos(pdf_path, empleados_path, columnas_map):
         
         tarea = {
             "pagina": num_pagina + 1, "nif": "N/A", "nombre": "N/A",
-            "apellidos": "N/A", "email": "N/A", "status": "⚠️ Sin NIF en PDF"}
+            "apellidos": "N/A", "email": "N/A", "status": "[ADVERTENCIA] Sin NIF en PDF"}
         if nif_match:
             nif = nif_match.group(1)
             tarea["nif"] = nif
@@ -67,10 +67,10 @@ def analizar_archivos(pdf_path, empleados_path, columnas_map):
                     "nombre": nombre_solo,  # Solo el nombre, sin apellidos
                     "apellidos": apellidos_campo,  # Apellidos separados
                     "email": info.iloc[0][columnas_map["email"]],
-                    "status": "✅ OK"
+                    "status": "[OK]"
                 })
             else:
-                tarea["status"] = "❌ NIF no encontrado en la lista"
+                tarea["status"] = "[ERROR] NIF no encontrado en la lista"
         tareas.append(tarea)
         
     doc_maestro.close()

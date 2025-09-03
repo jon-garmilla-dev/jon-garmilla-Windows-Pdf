@@ -67,9 +67,9 @@ for col, width in enumerate(column_widths, 1):
 output_path = '/home/jon.garmilla.dev/Dev-Lab/Pdf-Manipulation-Test/Nominas_Dinanlag_Group/sistema_nominas/employee_data/DATOS_PARA_NOMINA.xlsx'
 wb.save(output_path)
 
-print(f"✅ Archivo XLS creado: {output_path}")
-print(f"📊 Total empleados: {len(empleados)}")
-print(f"📋 Formato: {', '.join(headers)}")
+print(f"[OK] Archivo XLS creado: {output_path}")
+print(f"Total empleados: {len(empleados)}")
+print(f"Formato: {', '.join(headers)}")
 
 # Mostrar muestra
 print("\n=== MUESTRA (Primeros 3 empleados) ===")

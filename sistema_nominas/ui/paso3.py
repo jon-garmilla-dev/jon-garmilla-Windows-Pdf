@@ -40,7 +40,7 @@ class Paso3(tk.Frame):
                   foreground=[('selected', 'white')])
         self.tree = ttk.Treeview(
             tree_frame,
-            columns=("Nombre", "Email", "Archivo PDF", "Estado"),
+            columns=("Nombre", "Apellidos", "Email", "Archivo PDF", "Estado"),
             show="headings"
         )
         
@@ -60,7 +60,7 @@ class Paso3(tk.Frame):
         self.tree.grid(row=0, column=0, sticky="nsew")
 
         headings = {
-            "Nombre": 200, "Email": 250, "Archivo PDF": 300,
+            "Nombre": 150, "Apellidos": 150, "Email": 250, "Archivo PDF": 300,
             "Estado": 150
         }
         for col, width in headings.items():
@@ -94,7 +94,7 @@ class Paso3(tk.Frame):
         
         # Botón de cancelar (oculto inicialmente)
         self.btn_cancelar = tk.Button(
-            action_frame, text="🛑 Cancelar",
+            action_frame, text="Cancelar",
             command=self.cancelar_envio,
             font=("MS Sans Serif", 8, "bold"), width=12, height=2,
             relief="raised", bd=2, bg="#ff6b6b", fg="white"
@@ -169,7 +169,7 @@ class Paso3(tk.Frame):
         """Detiene el proceso de envío en curso."""
         if self.stop_event:
             self.stop_event.set()  # Señalar al hilo que debe parar
-            print("🛑 Señal de cancelación enviada al proceso de envío")
+            print("[CANCELADO] Señal de cancelación enviada al proceso de envío")
         
         self.desbloquear_navegacion()
         self.send_all_button.config(state="normal", text="Enviar a Todos")
@@ -197,7 +197,7 @@ class Paso3(tk.Frame):
         self.email_to_data = {}
         tareas_ok = [
             t for t in self.controller.tareas_verificacion
-            if t['status'] == '✅ OK'
+            if t['status'] == '[OK]'
         ]
         # Ordenar por página para mostrar de arriba hacia abajo
         tareas_ok.sort(key=lambda x: x['pagina'])
@@ -227,6 +227,7 @@ class Paso3(tk.Frame):
                 "", "end",
                 values=(
                     tarea["nombre"],
+                    tarea.get("apellidos", ""),
                     tarea["email"],
                     nombre_archivo,
                     "Pendiente"
@@ -236,7 +237,7 @@ class Paso3(tk.Frame):
             unique_key = f"pagina_{tarea['pagina']}"
             self.email_to_item_id[unique_key] = item_id
             # Guardar los datos originales
-            self.email_to_data[unique_key] = (tarea["nombre"], tarea["email"], "✅")
+            self.email_to_data[unique_key] = (tarea["nombre"], tarea["email"], "[OK]")
 
     def iniciar_envio_todos(self):
         email = self.controller.config.get('Email', 'email_origen', fallback='')
@@ -257,7 +258,7 @@ class Paso3(tk.Frame):
             self.estadisticas = {
                 "enviados": 0,
                 "errores": 0, 
-                "total": len([t for t in self.controller.tareas_verificacion if t['status'] == '✅ OK']),
+                "total": len([t for t in self.controller.tareas_verificacion if t['status'] == '[OK]']),
                 "tiempo_inicio": datetime.now()
             }
             

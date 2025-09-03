@@ -49,9 +49,9 @@ def validar_email_basico(email):
 def generar_estadisticas_envio(tareas):
     """Genera estadísticas detalladas de las tareas a procesar."""
     stats = {
-        'total_validadas': len([t for t in tareas if t['status'] == '✅ OK']),
-        'total_errores': len([t for t in tareas if t['status'].startswith('❌')]),
-        'total_warnings': len([t for t in tareas if t['status'].startswith('⚠️')]),
+        'total_validadas': len([t for t in tareas if t['status'] == '[OK]']),
+        'total_errores': len([t for t in tareas if t['status'].startswith('[ERROR]')]),
+        'total_warnings': len([t for t in tareas if t['status'].startswith('[ADVERTENCIA]')]),
         'emails_invalidos': 0,
         'emails_duplicados': 0
     }
@@ -59,7 +59,7 @@ def generar_estadisticas_envio(tareas):
     # Analizar emails
     emails_vistos = set()
     for tarea in tareas:
-        if tarea['status'] == '✅ OK':
+        if tarea['status'] == '[OK]':
             email = tarea.get('email', '').strip().lower()
             
             if not validar_email_basico(email):
@@ -105,27 +105,27 @@ class RobustEmailSender:
                 log_info("Autenticando...")
                 self.server.login(email_origen, password)
                 
-                log_info("✅ Conexión SMTP establecida exitosamente")
+                log_info("[OK] Conexión SMTP establecida exitosamente")
                 self.conexiones_fallidas = 0
                 return True
                 
             except smtplib.SMTPAuthenticationError as e:
-                log_error(f"❌ Error de autenticación: {e}")
+                log_error(f"[ERROR] Error de autenticación: {e}")
                 log_error("Verificar credenciales de email y contraseñas de aplicación")
                 return False
                 
             except smtplib.SMTPServerDisconnected as e:
-                log_warning(f"⚠️  Servidor desconectado (intento {intento + 1}): {e}")
+                log_warning(f"[ADVERTENCIA] Servidor desconectado (intento {intento + 1}): {e}")
                 
             except socket.timeout as e:
-                log_warning(f"⚠️  Timeout de conexión (intento {intento + 1}): {e}")
+                log_warning(f"[ADVERTENCIA] Timeout de conexión (intento {intento + 1}): {e}")
                 
             except socket.gaierror as e:
-                log_error(f"❌ Error de DNS/red: {e}")
+                log_error(f"[ERROR] Error de DNS/red: {e}")
                 return False
                 
             except Exception as e:
-                log_warning(f"⚠️  Error de conexión (intento {intento + 1}): {type(e).__name__}: {e}")
+                log_warning(f"[ADVERTENCIA] Error de conexión (intento {intento + 1}): {type(e).__name__}: {e}")
             
             # Backoff exponencial entre reintentos
             if intento < self.max_reintentos - 1:
@@ -133,7 +133,7 @@ class RobustEmailSender:
                 log_info(f"Esperando {delay}s antes del siguiente intento...")
                 time.sleep(delay)
         
-        log_error(f"❌ Failed to connect after {self.max_reintentos} attempts")
+        log_error(f"[ERROR] Failed to connect after {self.max_reintentos} attempts")
         self.conexiones_fallidas += 1
         return False
     
@@ -158,7 +158,7 @@ class RobustEmailSender:
                 return True
                 
             except smtplib.SMTPServerDisconnected as e:
-                log_warning(f"⚠️  Servidor desconectado durante envío (intento {intento + 1}): {e}")
+                log_warning(f"[ADVERTENCIA] Servidor desconectado durante envío (intento {intento + 1}): {e}")
                 # Intentar reconectar
                 email_origen = self.config.get('Email', 'email_origen')
                 password = self.config.get('Email', 'password')
@@ -168,18 +168,18 @@ class RobustEmailSender:
                     return False
                     
             except smtplib.SMTPRecipientsRefused as e:
-                log_error(f"❌ Email rechazado por el servidor: {email_destino} - {e}")
+                log_error(f"[ERROR] Email rechazado por el servidor: {email_destino} - {e}")
                 return False  # No reintentar, email inválido
                 
             except smtplib.SMTPDataError as e:
-                log_error(f"❌ Error de datos SMTP: {e}")
+                log_error(f"[ERROR] Error de datos SMTP: {e}")
                 return False  # No reintentar, problema con el mensaje
                 
             except socket.timeout as e:
-                log_warning(f"⚠️  Timeout enviando email (intento {intento + 1}): {e}")
+                log_warning(f"[ADVERTENCIA] Timeout enviando email (intento {intento + 1}): {e}")
                 
             except Exception as e:
-                log_warning(f"⚠️  Error enviando email (intento {intento + 1}): {type(e).__name__}: {e}")
+                log_warning(f"[ADVERTENCIA] Error enviando email (intento {intento + 1}): {type(e).__name__}: {e}")
             
             # Pausa antes del siguiente intento
             if intento < max_reintentos - 1:
@@ -187,7 +187,7 @@ class RobustEmailSender:
                 log_info(f"Esperando {delay}s antes de reintentar envío...")
                 time.sleep(delay)
         
-        log_error(f"❌ Failed to send email to {email_destino} after {max_reintentos} attempts")
+        log_error(f"[ERROR] Failed to send email to {email_destino} after {max_reintentos} attempts")
         return False
     
     def cerrar(self):
@@ -195,7 +195,7 @@ class RobustEmailSender:
         if self.server:
             try:
                 self.server.quit()
-                log_info("✅ Conexión SMTP cerrada correctamente")
+                log_info("[OK] Conexión SMTP cerrada correctamente")
             except:
                 try:
                     self.server.close()
@@ -282,7 +282,7 @@ def procesar_pdf_individual(doc_maestro, tarea, output_dir, config):
 
 def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_callback, stop_event=None):
     """Worker que procesa y envía las nóminas en un hilo separado."""
-    log_info("🚀 Iniciando el proceso de envío de nóminas.")
+    log_info("Iniciando el proceso de envío de nóminas.")
     
     # IMPORTANTE: Siempre recargar configuración para asegurar descifrado
     from .settings import load_settings
@@ -302,42 +302,42 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
         email_origen = config_descifrada.get('Email', 'email_origen')
         password = config_descifrada.get('Email', 'password')
         
-        log_info(f"🔑 Email configurado: {email_origen}")
-        log_info(f"🔑 Configuración cargada y descifrada correctamente")
+        log_info(f"Email configurado: {email_origen}")
+        log_info("Configuración cargada y descifrada correctamente")
         
         if not email_origen or not password:
-            log_error("❌ Credenciales de email no configuradas")
-            raise ValueError("❌ Credenciales de email no configuradas.")
+            log_error("[ERROR] Credenciales de email no configuradas")
+            raise ValueError("[ERROR] Credenciales de email no configuradas.")
 
         # Inicializar cliente robusto de email
         email_sender = RobustEmailSender(config_descifrada)
         
         # Establecer conexión con reintentos automáticos
-        log_info("🔗 Estableciendo conexión SMTP...")
+        log_info("Estableciendo conexión SMTP...")
         
         if not email_sender.conectar(email_origen, password):
-            log_error("❌ Falló la conexión SMTP después de reintentos")
-            raise ConnectionError("❌ No se pudo establecer conexión SMTP después de varios intentos")
-        log_info("✅ Conexión SMTP establecida correctamente")
+            log_error("[ERROR] Falló la conexión SMTP después de reintentos")
+            raise ConnectionError("[ERROR] No se pudo establecer conexión SMTP después de varios intentos")
+        log_info("[OK] Conexión SMTP establecida correctamente")
 
         # Análisis previo de las tareas
         pre_stats = generar_estadisticas_envio(tareas)
-        log_info(f"📊 ANÁLISIS PREVIO:")
-        log_info(f"   ✅ Validadas para envío: {pre_stats['total_validadas']}")
-        log_info(f"   ❌ Con errores: {pre_stats['total_errores']}")
-        log_info(f"   ⚠️  Con warnings: {pre_stats['total_warnings']}")
+        log_info("ANÁLISIS PREVIO:")
+        log_info(f"   [OK] Validadas para envío: {pre_stats['total_validadas']}")
+        log_info(f"   [ERROR] Con errores: {pre_stats['total_errores']}")
+        log_info(f"   [ADVERTENCIA] Con warnings: {pre_stats['total_warnings']}")
         if pre_stats['emails_invalidos'] > 0:
-            log_warning(f"   📧 Emails con formato inválido: {pre_stats['emails_invalidos']}")
+            log_warning(f"   [ADVERTENCIA] Emails con formato inválido: {pre_stats['emails_invalidos']}")
         if pre_stats['emails_duplicados'] > 0:
-            log_warning(f"   🔄 Emails duplicados detectados: {pre_stats['emails_duplicados']}")
+            log_warning(f"   [ADVERTENCIA] Emails duplicados detectados: {pre_stats['emails_duplicados']}")
 
         doc_maestro = fitz.open(pdf_path)
-        tareas_a_enviar = [t for t in tareas if t['status'] == '✅ OK']
+        tareas_a_enviar = [t for t in tareas if t['status'] == '[OK]']
         # Ordenar por número de página para procesar de arriba hacia abajo
         tareas_a_enviar.sort(key=lambda x: x['pagina'])
         
         stats['total'] = len(tareas_a_enviar)
-        log_info(f"🚀 Iniciando procesamiento de {stats['total']} nóminas.")
+        log_info(f"Iniciando procesamiento de {stats['total']} nóminas.")
         
         # Crear estructura organizada por mes/año
         base_dir = config_descifrada.get('Carpetas', 'salida', fallback='nominas_individuales')
@@ -362,15 +362,15 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
             nombre_pdf_original = os.path.basename(pdf_path)
             destino_pdf_original = os.path.join(carpeta_mes, nombre_pdf_original)
             shutil.copy2(pdf_path, destino_pdf_original)
-            log_info(f"📄 PDF original copiado: {destino_pdf_original}")
+            log_info(f"PDF original copiado: {destino_pdf_original}")
         except Exception as e:
-            log_error(f"❌ Error al copiar PDF original: {e}")
+            log_error(f"[ERROR] Error al copiar PDF original: {e}")
 
         # Procesar cada nómina con recuperación de errores
         for i, tarea in enumerate(tareas_a_enviar):
             # Verificar si se debe cancelar el proceso
             if stop_event and stop_event.is_set():
-                log_info("🛑 Proceso de envío cancelado por el usuario.")
+                log_info("[CANCELADO] Proceso de envío cancelado por el usuario.")
                 status_callback("proceso_cancelado", "Proceso cancelado", "cancelled")
                 break
                 
@@ -379,7 +379,7 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
             email_destino = tarea['email']
             apellidos_empleado = tarea.get('apellidos', '')
             
-            log_info(f"📧 Procesando {i+1}/{stats['total']}: {nombre} → {email_destino}")
+            log_info(f"Procesando {i+1}/{stats['total']}: {nombre} -> {email_destino}")
             
             tarea_exitosa = False
             error_msg = ""
@@ -426,8 +426,8 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
                 # Error en procesamiento del PDF o preparación del email
                 error_msg = f"{type(e).__name__}: {str(e)[:100]}"
                 stats['errores'] += 1
-                log_error(f"❌ Error procesando {nombre}: {error_msg}")
-                log_debug(f"🐛 Stack trace completo:", exc_info=True)
+                log_error(f"[ERROR] Error procesando {nombre}: {error_msg}")
+                log_debug("Stack trace completo:", exc_info=True)
                 
                 # Limpiar archivos temporales en caso de error
                 try:
@@ -460,12 +460,12 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
         
         # Resumen final
         log_info("=" * 50)
-        log_info("📊 RESUMEN DEL ENVÍO:")
-        log_info(f"   📋 Total procesadas: {stats['total']}")
-        log_info(f"   ✅ Enviadas exitosamente: {stats['enviados']}")
-        log_info(f"   ❌ Con errores: {stats['errores']}")
+        log_info("RESUMEN DEL ENVÍO:")
+        log_info(f"   Total procesadas: {stats['total']}")
+        log_info(f"   [OK] Enviadas exitosamente: {stats['enviados']}")
+        log_info(f"   [ERROR] Con errores: {stats['errores']}")
         if stats['errores'] > 0:
-            log_info("   💥 Errores encontrados:")
+            log_info("   Errores encontrados:")
             for error_info in stats['errores_lista'][:5]:  # Mostrar solo primeros 5
                 log_info(f"      • {error_info['nombre']}: {error_info['error']}")
             if len(stats['errores_lista']) > 5:
@@ -479,17 +479,17 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
         generar_reporte_final(stats, tareas, config_descifrada)
         
         # Pasar estadísticas finales al callback
-        log_info(f"📊 ENVIANDO ESTADÍSTICAS FINALES: enviados={stats['enviados']}, errores={stats['errores']}, total={stats['total']}")
+        log_info(f"ENVIANDO ESTADÍSTICAS FINALES: enviados={stats['enviados']}, errores={stats['errores']}, total={stats['total']}")
         status_callback("estadisticas_finales", "", "completed", stats)
         
         if stats['enviados'] > 0:
-            log_info("🎉 Proceso de envío de nóminas completado.")
+            log_info("[OK] Proceso de envío de nóminas completado.")
         else:
-            log_warning("⚠️  No se enviaron nóminas exitosamente.")
+            log_warning("[ADVERTENCIA] No se enviaron nóminas exitosamente.")
             
     except Exception as e:
-        log_error(f"❌ Error crítico en el proceso: {type(e).__name__}: {e}")
-        log_debug(f"🐛 Stack trace crítico:", exc_info=True)
+        log_error(f"[ERROR] Error crítico en el proceso: {type(e).__name__}: {e}")
+        log_debug("Stack trace crítico:", exc_info=True)
         status_callback("error_general", f"Error crítico: {str(e)[:100]}", "error")
         
         # Intentar cerrar conexiones en caso de error

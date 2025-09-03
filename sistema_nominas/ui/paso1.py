@@ -478,18 +478,28 @@ class Paso1(tk.Frame):
         self.siguiente_btn.config(state="normal" if is_ready else "disabled")
 
     def ir_a_paso2(self):
+        print("[DEBUG] Iniciando transición a Paso 2...")
         mapa = {k: v.get() for k, v in self.controller.mapa_columnas.items()}
+        print(f"[DEBUG] Mapa de columnas: {mapa}")
+        print(f"[DEBUG] PDF: {self.controller.pdf_path.get()}")
+        print(f"[DEBUG] Empleados: {self.controller.empleados_path.get()}")
+        
         res = analizar_archivos(
             self.controller.pdf_path.get(),
             self.controller.empleados_path.get(),
             mapa
         )
         
+        print(f"[DEBUG] Resultado análisis: {type(res)} con keys: {list(res.keys()) if isinstance(res, dict) else 'No dict'}")
+        
         if "error" in res:
             play_error_sound()
+            print(f"[DEBUG] Error en análisis: {res['error']}")
             self.controller.show_centered_messagebox("error", "Error de Análisis", res["error"])
             return
             
         self.controller.tareas_verificacion = res["tareas"]
+        print(f"[DEBUG] Tareas creadas: {len(self.controller.tareas_verificacion) if self.controller.tareas_verificacion else 0}")
+        
         self.controller.frames["Paso2"].actualizar_tabla()
         self.controller.mostrar_frame("Paso2")

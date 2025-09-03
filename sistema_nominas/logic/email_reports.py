@@ -38,7 +38,7 @@ def generar_reporte_final(stats, todas_las_tareas_originales, config):
         timestamp = fecha_actual.strftime('%H%M%S')
         archivo_reporte = os.path.join(carpeta_mes, f"reporte_envio_{fecha_actual.year}_{mes_nombre}_{timestamp}.xlsx")
         
-        log_info(f"📊 Generando reporte con {len(todas_las_tareas_originales)} empleados totales")
+        log_info(f"Generando reporte con {len(todas_las_tareas_originales)} empleados totales")
         
         # Preparar datos para el reporte
         datos_reporte = []
@@ -58,7 +58,7 @@ def generar_reporte_final(stats, todas_las_tareas_originales, config):
             # Los que se procesaron y enviaron exitosamente
             count_exitosos = 0
             for tarea in todas_las_tareas_originales:
-                if tarea['status'] == '✅ OK':  # Solo los que estaban OK para envío
+                if tarea['status'] == '[OK]':  # Solo los que estaban OK para envío
                     key = f"{tarea['nombre']}|{tarea['email']}"
                     if key not in errores_dict and count_exitosos < total_enviados:
                         enviados_exitosos.add(key)
@@ -69,7 +69,7 @@ def generar_reporte_final(stats, todas_las_tareas_originales, config):
             key = f"{tarea['nombre']}|{tarea['email']}"
             
             # Determinar estado final según la lógica correcta
-            if tarea['status'] != '✅ OK':
+            if tarea['status'] != '[OK]':
                 # Las que tenían errores en Paso 2 = PENDIENTE
                 estado_envio = "PENDIENTE"
                 observaciones = f"No procesado: {tarea['status']}"
@@ -117,8 +117,8 @@ def generar_reporte_final(stats, todas_las_tareas_originales, config):
         stats['archivo_resumen_txt'] = os.path.join(carpeta_mes, "resumen_proceso.txt")
         
     except Exception as e:
-        log_error(f"❌ Error generando reporte final: {e}")
-        log_debug("🐛 Stack trace del error de reporte:", exc_info=True)
+        log_error(f"[ERROR] Error generando reporte final: {e}")
+        log_debug("Stack trace del error de reporte:", exc_info=True)
 
 
 def _crear_excel_completo(archivo_reporte, datos_reporte, stats, config, todas_las_tareas_originales):
@@ -210,7 +210,7 @@ def _aplicar_validacion_estado(worksheet, datos_reporte):
     dv.add(rango_validacion)
     worksheet.add_data_validation(dv)
     
-    log_info(f"✅ Dropdown agregado a rango: {rango_validacion}")
+    log_info(f"[OK] Dropdown agregado a rango: {rango_validacion}")
 
 
 def _aplicar_formato_condicional(worksheet, datos_reporte, color_success, color_error, color_pending):
@@ -245,7 +245,7 @@ def _aplicar_formato_condicional(worksheet, datos_reporte, color_success, color_
     )
     worksheet.conditional_formatting.add(rango_datos, regla_pendiente)
     
-    log_info(f"✅ Formato condicional agregado a rango: {rango_datos}")
+    log_info(f"[OK] Formato condicional agregado a rango: {rango_datos}")
 
 
 def _aplicar_proteccion_hoja(worksheet, datos_reporte):
@@ -354,7 +354,7 @@ def _crear_hoja_pendientes(writer, todas_las_tareas_originales):
     from openpyxl.styles import Alignment, PatternFill, Font
     
     # Hoja 3: Empleados Pendientes (los que NO se pudieron procesar)
-    empleados_pendientes = [t for t in todas_las_tareas_originales if t['status'] != '✅ OK']
+    empleados_pendientes = [t for t in todas_las_tareas_originales if t['status'] != '[OK]']
     
     if empleados_pendientes:
         pendientes_data = []
@@ -365,7 +365,7 @@ def _crear_hoja_pendientes(writer, todas_las_tareas_originales):
                 'Nombre': tarea['nombre'],
                 'Apellidos': tarea.get('apellidos', ''),
                 'Email': tarea['email'],
-                'Motivo Pendiente': tarea['status'].replace('✅', '').replace('❌', '').replace('⚠️', '').strip(),
+                'Motivo Pendiente': tarea['status'].replace('[OK]', '').replace('[ERROR]', '').replace('[ADVERTENCIA]', '').strip(),
                 'Acción Requerida': generar_accion_requerida(tarea['status'])
             })
         
@@ -405,9 +405,9 @@ def _crear_hoja_pendientes(writer, todas_las_tareas_originales):
             adjusted_width = min(max(max_length + 2, 15), 50)
             worksheet3.column_dimensions[column_letter].width = adjusted_width
         
-        log_info(f"✅ Hoja 'Pendientes' agregada con {len(empleados_pendientes)} empleados")
+        log_info(f"[OK] Hoja 'Pendientes' agregada con {len(empleados_pendientes)} empleados")
     else:
-        log_info("✅ No hay empleados pendientes - todos se procesaron correctamente")
+        log_info("[OK] No hay empleados pendientes - todos se procesaron correctamente")
 
 
 def _crear_reporte_txt(carpeta_mes, stats, archivo_reporte):

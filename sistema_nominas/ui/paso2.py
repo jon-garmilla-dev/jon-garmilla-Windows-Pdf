@@ -246,10 +246,18 @@ class Paso2(tk.Frame):
 
     def actualizar_tabla(self):
         """Actualiza la tabla de verificación con los datos procesados."""
+        print("[DEBUG] Paso2.actualizar_tabla() iniciado")
+        
         # Limpiar tabla
         self.tree.delete(*self.tree.get_children())
         
+        print(f"[DEBUG] tareas_verificacion existe: {hasattr(self.controller, 'tareas_verificacion')}")
+        if hasattr(self.controller, 'tareas_verificacion'):
+            print(f"[DEBUG] tareas_verificacion contenido: {self.controller.tareas_verificacion}")
+            print(f"[DEBUG] tareas_verificacion length: {len(self.controller.tareas_verificacion) if self.controller.tareas_verificacion else 'None'}")
+        
         if not hasattr(self.controller, 'tareas_verificacion') or not self.controller.tareas_verificacion:
+            print("[DEBUG] No hay tareas de verificación - mostrando mensaje de error")
             messagebox.showinfo(
                 "Sin Datos",
                 "No hay datos para verificar.\n\n"
