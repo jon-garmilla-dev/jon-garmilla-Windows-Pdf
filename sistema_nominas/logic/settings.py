@@ -94,16 +94,16 @@ def save_settings(config):
             pass  # Fail silently if backup cannot be created
     
     try:
-            if ENCRYPTION_AVAILABLE:
+        if ENCRYPTION_AVAILABLE:
             config_to_save = encrypt_sensitive_config(config)
         else:
             config_to_save = config
         
-            with open(SETTINGS_FILE, 'w', encoding='utf-8') as configfile:
+        with open(SETTINGS_FILE, 'w', encoding='utf-8') as configfile:
             config_to_save.write(configfile)
             
     except Exception as e:
-            if os.path.exists(SETTINGS_FILE + '.backup'):
+        if os.path.exists(SETTINGS_FILE + '.backup'):
             shutil.copy(SETTINGS_FILE + '.backup', SETTINGS_FILE)
         raise Exception(f"Error al guardar configuración: {e}")
     

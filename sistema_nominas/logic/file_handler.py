@@ -84,15 +84,15 @@ def analizar_archivos(pdf_path, empleados_path, columnas_map):
         if nif_match:
             nif = nif_match.group(1)
             tarea["nif"] = nif
-                info = df[df[columnas_map["nif"]] == nif]
+            info = df[df[columnas_map["nif"]] == nif]
             if not info.empty:
-                        nombre_solo = info.iloc[0][columnas_map["nombre"]]
+                nombre_solo = info.iloc[0][columnas_map["nombre"]]
                 if "apellidos" in columnas_map and columnas_map["apellidos"]:
                     apellidos_campo = info.iloc[0][columnas_map["apellidos"]]
                 else:
                     apellidos_campo = ""
                 
-                        posicion_original = None
+                posicion_original = None
                 if "POS." in df.columns:
                     posicion_original = info.iloc[0]["POS."]
                 
