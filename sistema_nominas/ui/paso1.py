@@ -463,9 +463,35 @@ class Paso1(tk.Frame):
                 col, anchor=tk.W, stretch=tk.YES, minwidth=100
             )
 
+        # Configurar estilo para la línea de separación
+        self.preview_tree.tag_configure('separator', background='#E0E0E0', foreground='#666666')
+
+        total_rows = len(df)
+        row_count = 0
+
+        # Mostrar los 3 primeros registros
         for i, (index, row) in enumerate(df.head(3).iterrows()):
-            row_style = 'evenrow' if i % 2 else 'oddrow'
+            row_style = 'evenrow' if row_count % 2 else 'oddrow'
             self.preview_tree.insert("", "end", values=list(row), tags=(row_style,))
+            row_count += 1
+
+        # Si hay más de 4 registros, mostrar separador y último registro
+        if total_rows > 4:
+            # Crear fila separadora con "xxxx"
+            separator_values = ["..." for _ in columnas]
+            row_style = 'evenrow' if row_count % 2 else 'oddrow'
+            self.preview_tree.insert("", "end", values=separator_values, tags=('separator',))
+            row_count += 1
+            
+            # Mostrar el último registro
+            last_row = df.tail(1).iloc[0]
+            row_style = 'evenrow' if row_count % 2 else 'oddrow'
+            self.preview_tree.insert("", "end", values=list(last_row), tags=(row_style,))
+        elif total_rows == 4:
+            # Si hay exactamente 4, mostrar el 4to sin separador
+            fourth_row = df.iloc[3]
+            row_style = 'evenrow' if row_count % 2 else 'oddrow'
+            self.preview_tree.insert("", "end", values=list(fourth_row), tags=(row_style,))
 
     def verificar_estado(self, event=None):
         pdf_ok = bool(self.controller.pdf_path.get())
