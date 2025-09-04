@@ -122,22 +122,39 @@ class PasoAjustes(tk.Frame):
         tk.Label(smtp_group, text="Servidor SMTP:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
             row=0, column=0, sticky="w", pady=8, padx=12)
         
-        self.servidor_entry = tk.Entry(smtp_group, width=35, font=("MS Sans Serif", 8))
-        self.servidor_entry.grid(row=0, column=1, sticky="ew", pady=5)
+        self.servidor_entry = tk.Entry(smtp_group, width=25, font=("MS Sans Serif", 8))
+        self.servidor_entry.grid(row=0, column=1, sticky="w", pady=8, padx=(0, 20))
         self.servidor_entry.insert(
             0,
             self.controller.config.get(
                 'SMTP', 'servidor', fallback='smtp.gmail.com'))
         
         # Puerto
-        tk.Label(smtp_group, text="Puerto:", font=("Segoe UI", 9), bg="#f8f9fa").grid(
-            row=0, column=2, sticky="w", pady=5, padx=(20, 10))
+        tk.Label(smtp_group, text="Puerto:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+            row=0, column=2, sticky="w", pady=8, padx=(0, 10))
         
-        self.puerto_entry = tk.Entry(smtp_group, width=10, font=("Segoe UI", 9), relief="solid", bd=1)
-        self.puerto_entry.grid(row=0, column=3, sticky="w", pady=5)
+        self.puerto_entry = tk.Entry(smtp_group, width=8, font=("MS Sans Serif", 8))
+        self.puerto_entry.grid(row=0, column=3, sticky="w", pady=8, padx=(0, 10))
         self.puerto_entry.insert(0, self.controller.config.get('SMTP', 'puerto', fallback='587'))
         
-        smtp_group.grid_columnconfigure(1, weight=1)
+        # Botón de ayuda para SMTP - justo después del puerto
+        help_btn_smtp = tk.Button(smtp_group, text="?", 
+                                font=("MS Sans Serif", 8), width=2,
+                                relief="raised", bd=2)
+        help_btn_smtp.grid(row=0, column=4, sticky="w", pady=8, padx=(5, 0))
+        
+        # Tooltip para configuración SMTP
+        smtp_tooltip = """Configuración del servidor de correo:
+
+• Servidor: Dirección del proveedor de email
+• Puerto: Canal de comunicación (587 para Gmail)
+
+Valores por defecto configurados.
+No modificar a menos que sea necesario."""
+        ToolTipButton(help_btn_smtp, smtp_tooltip)
+        
+        smtp_group.grid_columnconfigure(1, weight=0)
+        smtp_group.grid_columnconfigure(4, weight=1)
         
         # Credenciales
         cred_group = tk.LabelFrame(
@@ -344,7 +361,21 @@ Departamento de Recursos Humanos''')
         self.show_pdf_password = tk.BooleanVar()
         pdf_toggle_btn = tk.Button(pdf_password_frame, text="👁", command=self._toggle_pdf_password,
                                   font=("MS Sans Serif", 10), width=2, relief="raised", bd=1)
-        pdf_toggle_btn.pack(side="left", padx=(20, 0))
+        pdf_toggle_btn.pack(side="left", padx=(5, 0))
+        
+        # Botón de ayuda para contraseña PDF
+        help_btn_pdf = tk.Button(pdf_password_frame, text="?", 
+                                font=("MS Sans Serif", 8), width=2,
+                                relief="raised", bd=2)
+        help_btn_pdf.pack(side="left", padx=(5, 0))
+        
+        # Tooltip explicando las contraseñas de PDF
+        pdf_tooltip = """Contraseñas de los PDFs:
+
+• Apertura: NIF/DNI del empleado
+
+• Edición: La que configures aquí"""
+        ToolTipButton(help_btn_pdf, pdf_tooltip)
         
         # Configuración de Carpetas y Archivos
         carpetas_group = tk.LabelFrame(
