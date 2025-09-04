@@ -428,6 +428,8 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
             error_msg = ""
             
             try:
+                # Capturar tiempo de inicio del procesamiento
+                tiempo_procesamiento = datetime.now()
                 status_callback(f"pagina_{tarea['pagina']}", "Procesando PDF...", "processing")
                 
                 # 1. Validar email antes de procesar
@@ -451,12 +453,16 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
                     stats['enviados'] += 1
                     log_info(f"Email enviado exitosamente a {email_destino} (total enviados: {stats['enviados']})")
                     tarea_exitosa = True
+                    # Guardar tiempo de envío exitoso
+                    tarea['fecha_procesamiento'] = tiempo_procesamiento.strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     # Error en envío (ya reintentado automáticamente)
                     error_msg = f"Fallo en envío después de reintentos"
                     stats['errores'] += 1
                     # Mantener PDF para inspección manual
                     log_error(f"Email fallido a {email_destino} (total errores: {stats['errores']})")
+                    # Guardar tiempo de intento fallido
+                    tarea['fecha_procesamiento'] = tiempo_procesamiento.strftime('%Y-%m-%d %H:%M:%S')
                     
                     # Agregar a lista de errores
                     stats['errores_lista'].append({
@@ -471,6 +477,11 @@ def enviar_nominas_worker(pdf_path, tareas, config, status_callback, progress_ca
                 stats['errores'] += 1
                 log_error(f"[ERROR] Error procesando {nombre}: {error_msg}")
                 log_debug("Stack trace completo:", exc_info=True)
+                
+                # Guardar tiempo de error también
+                if 'tiempo_procesamiento' not in locals():
+                    tiempo_procesamiento = datetime.now()
+                tarea['fecha_procesamiento'] = tiempo_procesamiento.strftime('%Y-%m-%d %H:%M:%S')
                 
                 # Limpiar archivos temporales en caso de error
                 try:

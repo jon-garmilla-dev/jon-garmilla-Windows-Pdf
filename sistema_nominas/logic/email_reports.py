@@ -97,6 +97,13 @@ def generar_reporte_final(stats, todas_las_tareas_originales, config):
             # Obtener la posición original si existe
             posicion_original = tarea.get('posicion_original', 'N/A')
             
+            # Obtener fecha de procesamiento real o usar fecha por defecto
+            fecha_procesamiento = tarea.get('fecha_procesamiento', 'No procesado')
+            if fecha_procesamiento == 'No procesado' and estado_envio == 'PENDIENTE':
+                fecha_procesamiento = 'No procesado'
+            elif fecha_procesamiento == 'No procesado':
+                fecha_procesamiento = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                
             datos_reporte.append({
                 'POS.': posicion_original,  # Primera columna: posición original
                 'Página PDF': tarea['pagina'],
@@ -107,8 +114,29 @@ def generar_reporte_final(stats, todas_las_tareas_originales, config):
                 'Archivo PDF': nombre_archivo,
                 'Estado Envío': estado_envio,
                 'Observaciones': observaciones,  # Mantener para lógica empresarial
-                'Fecha Procesado': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                'Fecha Procesado': fecha_procesamiento
             })
+        
+        # Ordenar datos por posición original (de 0 al infinito)
+        def obtener_posicion_para_ordenar(item):
+            pos = item['POS.']
+            # Si es 'N/A' o vacío, ponerlo al final
+            if pos == 'N/A' or pos is None or pos == '':
+                return float('inf')
+            # Intentar convertir a número (puede venir como string desde Excel)
+            try:
+                return float(pos)
+            except (ValueError, TypeError):
+                return float('inf')
+        
+        datos_reporte.sort(key=obtener_posicion_para_ordenar)
+        
+        # DEBUG: Mostrar los primeros elementos para verificar ordenamiento
+        log_info(f"[DEBUG] Primeros 5 elementos después de ordenar por posición:")
+        for i, item in enumerate(datos_reporte[:5]):
+            pos_raw = item['POS.']
+            pos_num = obtener_posicion_para_ordenar(item)
+            log_info(f"[DEBUG]   {i+1}. POS: '{pos_raw}' -> {pos_num}, Página: {item['Página PDF']}, Nombre: {item['Nombre']}")
         
         # Crear Excel con múltiples hojas
         _crear_excel_completo(archivo_reporte, datos_reporte, stats, config, todas_las_tareas_originales)
@@ -383,6 +411,20 @@ def _crear_hoja_pendientes(writer, todas_las_tareas_originales):
                 'Motivo Pendiente': tarea['status'].replace('[OK]', '').replace('[ERROR]', '').replace('[ADVERTENCIA]', '').strip(),
                 'Acción Requerida': generar_accion_requerida(tarea['status'])
             })
+        
+        # Ordenar los datos de pendientes por posición también
+        def obtener_posicion_pendientes(item):
+            pos = item['POS.']
+            # Si es 'N/A' o vacío, ponerlo al final
+            if pos == 'N/A' or pos is None or pos == '':
+                return float('inf')
+            # Intentar convertir a número (puede venir como string desde Excel)
+            try:
+                return float(pos)
+            except (ValueError, TypeError):
+                return float('inf')
+        
+        pendientes_data.sort(key=obtener_posicion_pendientes)
         
         df_pendientes = pd.DataFrame(pendientes_data)
         df_pendientes.to_excel(writer, sheet_name='Pendientes', index=False)
