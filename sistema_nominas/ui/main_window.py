@@ -9,23 +9,26 @@ from ui.paso_completado import PasoCompletado
 
 
 class GestorNominasApp(tk.Tk):
+    """Main payroll management application window.
+    
+    Provides a professional multi-step workflow interface for processing
+    payroll documents with sequential navigation security and comprehensive
+    error handling.
+    """
     def __init__(self):
         super().__init__()
-        self.withdraw()  # Ocultar la ventana principal al inicio
+        self.withdraw()
         self.title("Gestor-De-Nominas-App")
         self.geometry("1200x800")
         self.minsize(1000, 700)
-        self.configure(bg="#f0f0f0")  # Fondo gris claro estilo Windows
+        self.configure(bg="#f0f0f0")
         
-        # Centrar la ventana en la pantalla
         self.center_window()
         
-        # Mostrar splash screen
         self._show_splash()
         
         self.config = load_settings()
 
-        # Variables de estado compartidas
         self.pdf_path = tk.StringVar()
         self.empleados_path = tk.StringVar()
         self.last_dir = os.path.expanduser("~")
@@ -38,18 +41,14 @@ class GestorNominasApp(tk.Tk):
         }
         self.tareas_verificacion = []
         
-        # Control de navegación secuencial
         self.paso_actual = "Paso1"
 
         self._crear_widgets()
         self.mostrar_frame("Paso1", forzar=True)  # Forzar mostrar Paso1 al inicio
-        # Asegurar estilos correctos al inicio
         self._actualizar_estilos_pasos()
 
-        # Manejar el cierre de la ventana
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
         
-        # Ocultar splash cuando la app esté completamente cargada
         self.after_idle(self._hide_splash_show_main)
         
     def ir_a_paso_siguiente(self, destino):

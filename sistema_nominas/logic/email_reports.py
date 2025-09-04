@@ -40,35 +40,26 @@ def generar_reporte_final(stats, todas_las_tareas_originales, config):
         
         log_info(f"Generando reporte con {len(todas_las_tareas_originales)} empleados totales")
         
-        # Preparar datos para el reporte
         datos_reporte = []
-        
-        # Crear sets para búsqueda rápida
         enviados_exitosos = set()
         errores_dict = {}
-        
-        # Procesar lista de errores de envío
         for error_info in stats.get('errores_lista', []):
             key = f"{error_info['nombre']}|{error_info['email']}"
             errores_dict[key] = error_info['error']
         
-        # Determinar qué se envió exitosamente (total - errores)
         total_enviados = stats.get('enviados', 0)
         if total_enviados > 0:
-            # Los que se procesaron y enviaron exitosamente
             count_exitosos = 0
             for tarea in todas_las_tareas_originales:
-                if tarea['status'] == '[OK]':  # Solo los que estaban OK para envío
+                if tarea['status'] == '[OK]':
                     key = f"{tarea['nombre']}|{tarea['email']}"
                     if key not in errores_dict and count_exitosos < total_enviados:
                         enviados_exitosos.add(key)
                         count_exitosos += 1
         
-        # Procesar TODAS las tareas (incluyendo las que tenían errores en Paso 2)
         for tarea in todas_las_tareas_originales:
             key = f"{tarea['nombre']}|{tarea['email']}"
             
-            # Determinar estado final según la lógica correcta
             if tarea['status'] != '[OK]':
                 # Las que tenían errores en Paso 2 = PENDIENTE
                 estado_envio = "PENDIENTE"
@@ -120,10 +111,10 @@ def generar_reporte_final(stats, todas_las_tareas_originales, config):
         # Ordenar datos por posición original (de 0 al infinito)
         def obtener_posicion_para_ordenar(item):
             pos = item['POS.']
-            # Si es 'N/A' o vacío, ponerlo al final
+            # Put 'N/A' or empty values at the end
             if pos == 'N/A' or pos is None or pos == '':
                 return float('inf')
-            # Intentar convertir a número (puede venir como string desde Excel)
+            # Try converting to number (may come as string from Excel)
             try:
                 return float(pos)
             except (ValueError, TypeError):
@@ -138,13 +129,8 @@ def generar_reporte_final(stats, todas_las_tareas_originales, config):
             pos_num = obtener_posicion_para_ordenar(item)
             log_info(f"[DEBUG]   {i+1}. POS: '{pos_raw}' -> {pos_num}, Página: {item['Página PDF']}, Nombre: {item['Nombre']}")
         
-        # Crear Excel con múltiples hojas
         _crear_excel_completo(archivo_reporte, datos_reporte, stats, config, todas_las_tareas_originales)
-        
-        # Crear TXT simple para referencia rápida
         _crear_reporte_txt(carpeta_mes, stats, archivo_reporte)
-        
-        # Actualizar stats con rutas de reportes
         stats['archivo_reporte_excel'] = archivo_reporte
         stats['archivo_resumen_txt'] = os.path.join(carpeta_mes, "resumen_proceso.txt")
         
@@ -415,10 +401,10 @@ def _crear_hoja_pendientes(writer, todas_las_tareas_originales):
         # Ordenar los datos de pendientes por posición también
         def obtener_posicion_pendientes(item):
             pos = item['POS.']
-            # Si es 'N/A' o vacío, ponerlo al final
+            # Put 'N/A' or empty values at the end
             if pos == 'N/A' or pos is None or pos == '':
                 return float('inf')
-            # Intentar convertir a número (puede venir como string desde Excel)
+            # Try converting to number (may come as string from Excel)
             try:
                 return float(pos)
             except (ValueError, TypeError):

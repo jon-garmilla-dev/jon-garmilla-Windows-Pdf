@@ -8,12 +8,23 @@ KEY_FILE = '.secret_key'
 
 
 def generate_key():
-    """Genera una clave de cifrado única para el usuario."""
+    """Generate a unique encryption key for the user.
+    
+    Returns:
+        bytes: Cryptographically secure random key for Fernet encryption
+    """
     return Fernet.generate_key()
 
 
 def get_or_create_key():
-    """Obtiene la clave existente o crea una nueva."""
+    """Get existing encryption key or create a new one.
+    
+    Loads key from hidden file if it exists, otherwise generates new key.
+    On Windows, attempts to set hidden attribute on key file for security.
+    
+    Returns:
+        bytes: Encryption key for use with Fernet
+    """
     if os.path.exists(KEY_FILE):
         with open(KEY_FILE, 'rb') as key_file:
             key = key_file.read()
@@ -21,18 +32,26 @@ def get_or_create_key():
         key = generate_key()
         with open(KEY_FILE, 'wb') as key_file:
             key_file.write(key)
-        # Hacer el archivo de clave oculto en Windows
+        # Set hidden attribute on key file in Windows for security
         if os.name == 'nt':
             import subprocess
             try:
                 subprocess.check_call(['attrib', '+H', KEY_FILE])
             except:
-                pass  # Fallar silenciosamente si no se puede ocultar
+                pass
     return key
 
 
 def encrypt_string(text, key):
-    """Cifra una cadena de texto."""
+    """Encrypt a text string using Fernet symmetric encryption.
+    
+    Args:
+        text (str): Plain text to encrypt
+        key (bytes): Fernet encryption key
+        
+    Returns:
+        str: Base64-encoded encrypted text, or original text if empty
+    """
     if not text:
         return text
     f = Fernet(key)
@@ -40,21 +59,42 @@ def encrypt_string(text, key):
 
 
 def decrypt_string(encrypted_text, key):
-    """Descifra una cadena de texto."""
+    """Decrypt a text string using Fernet symmetric encryption.
+    
+    Handles both encrypted and plain text values safely.
+    Only attempts decryption if text starts with 'enc_' prefix.
+    
+    Args:
+        encrypted_text (str): Text to decrypt (may be plain or encrypted)
+        key (bytes): Fernet encryption key
+        
+    Returns:
+        str: Decrypted plain text, or original text if not encrypted/decryption fails
+    """
     if not encrypted_text or not encrypted_text.startswith('enc_'):
-        return encrypted_text  # No está cifrado
+        return encrypted_text  # Text is not encrypted
     try:
         f = Fernet(key)
-        # Remover el prefijo 'enc_'
+        # Remove the 'enc_' prefix before decryption
         encrypted_data = encrypted_text[4:]
         decrypted_bytes = f.decrypt(base64.urlsafe_b64decode(encrypted_data.encode()))
         return decrypted_bytes.decode()
     except:
-        return encrypted_text  # Si falla la desencriptación, devolver original
+        return encrypted_text  # Return original if decryption fails
 
 
 def encrypt_sensitive_config(config):
-    """Cifra los campos sensibles de la configuración."""
+    """Encrypt sensitive fields in configuration object.
+    
+    Encrypts password fields and other sensitive configuration values.
+    Only encrypts values that are not already encrypted (no 'enc_' prefix).
+    
+    Args:
+        config (ConfigParser): Configuration object to encrypt
+        
+    Returns:
+        ConfigParser: Configuration object with encrypted sensitive fields
+    """
     key = get_or_create_key()
     
     sensitive_fields = {
@@ -75,10 +115,20 @@ def encrypt_sensitive_config(config):
 
 
 def decrypt_sensitive_config(config):
-    """Descifra los campos sensibles de la configuración."""
+    """Decrypt sensitive fields in configuration object.
+    
+    Creates a new configuration object with decrypted sensitive values.
+    Handles both encrypted and plain text values gracefully.
+    
+    Args:
+        config (ConfigParser): Configuration object with encrypted fields
+        
+    Returns:
+        ConfigParser: New configuration object with decrypted sensitive fields
+    """
     key = get_or_create_key()
     
-    # Crear una nueva configuración con valores descifrados
+    # Create new configuration object with decrypted values
     decrypted_config = configparser.ConfigParser()
     
     for section_name in config.sections():
@@ -92,12 +142,23 @@ def decrypt_sensitive_config(config):
 
 
 def is_first_run():
-    """Verifica si es la primera vez que se ejecuta la aplicación."""
+    """Check if this is the first application run.
+    
+    Returns:
+        bool: True if settings file or encryption key file is missing
+    """
     return not os.path.exists(SETTINGS_FILE) or not os.path.exists(KEY_FILE)
 
 
 def create_default_config():
-    """Crea una configuración por defecto para el primer uso."""
+    """Create default configuration for first-time use.
+    
+    Sets up initial configuration sections with empty values that user can fill.
+    Includes email, SMTP, folders, and PDF password settings.
+    
+    Returns:
+        ConfigParser: Default configuration object
+    """
     config = configparser.ConfigParser()
     
     config['Email'] = {

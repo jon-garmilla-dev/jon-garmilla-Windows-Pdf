@@ -10,10 +10,10 @@ def generar_asunto_personalizado(config, nombre, apellidos):
     # Obtener plantilla de asunto desde configuración
     asunto_template = config.get('Email', 'asunto', fallback='Tu nómina de {mes} {año}')
     
-    # Variables para reemplazo
+    # Variables available for template replacement
     variables = _obtener_variables_email(nombre, apellidos)
     
-    # Reemplazar variables en la plantilla
+    # Replace template variables with actual values
     asunto_final = asunto_template
     for variable, valor in variables.items():
         asunto_final = asunto_final.replace(f'{{{variable}}}', valor)
@@ -32,10 +32,10 @@ La contraseña para abrir el archivo es tu NIF.
 
 Saludos cordiales.''')
     
-    # Variables para reemplazo
+    # Variables available for template replacement
     variables = _obtener_variables_email(nombre, apellidos)
     
-    # Reemplazar variables en la plantilla
+    # Replace template variables with actual values
     cuerpo_final = cuerpo_template
     for variable, valor in variables.items():
         cuerpo_final = cuerpo_final.replace(f'{{{variable}}}', valor)

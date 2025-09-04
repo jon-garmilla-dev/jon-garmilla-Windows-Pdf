@@ -74,16 +74,16 @@ def limpiar_nombre_archivo(nombre):
     Returns:
         str: Nombre limpio y válido
     """
-    # Caracteres no permitidos en nombres de archivo
+    # Characters not allowed in filenames across operating systems
     caracteres_invalidos = r'[<>:"/\\|?*]'
     
-    # Reemplazar caracteres inválidos con guión bajo
+    # Replace invalid characters with underscore
     nombre_limpio = re.sub(caracteres_invalidos, '_', nombre)
     
-    # Eliminar espacios extra y reemplazar espacios múltiples con uno solo
+    # Remove extra spaces and replace multiple spaces with single space
     nombre_limpio = re.sub(r'\s+', ' ', nombre_limpio.strip())
     
-    # Reemplazar espacios con guión bajo (opcional, para mayor compatibilidad)
+    # Replace spaces with underscore (optional, for better compatibility)
     # nombre_limpio = nombre_limpio.replace(' ', '_')
     
     return nombre_limpio
@@ -118,11 +118,11 @@ def validar_plantilla(plantilla):
     if not plantilla or not isinstance(plantilla, str):
         return False, "La plantilla no puede estar vacía"
     
-    # Verificar que termine en .pdf
+    # Verify template ends with .pdf extension
     if not plantilla.lower().endswith('.pdf'):
         return False, "La plantilla debe terminar en '.pdf'"
     
-    # Verificar variables válidas
+    # Verify only valid template variables are used
     variables_validas = {'NOMBRE', 'APELLIDO', 'nombre', 'apellido', 'mes', 'año', 'MES'}
     variables_encontradas = set(re.findall(r'\{(\w+)\}', plantilla))
     
@@ -130,7 +130,7 @@ def validar_plantilla(plantilla):
     if variables_invalidas:
         return False, f"Variables no válidas: {', '.join(variables_invalidas)}"
     
-    # Verificar que no tenga caracteres problemáticos
+    # Verify template doesn't contain problematic characters
     caracteres_problematicos = '<>:"/\\|?*'
     for char in caracteres_problematicos:
         if char in plantilla:

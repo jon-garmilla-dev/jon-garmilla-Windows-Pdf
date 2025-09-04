@@ -1,133 +1,247 @@
-# Gestor de Nóminas
+# Payroll Management System
 
-Aplicación de escritorio profesional para procesar y enviar nóminas de forma masiva y segura.
+Desktop application for automated payroll processing and email distribution.
 
-## Características Principales
+## Overview
 
-- **Procesamiento masivo**: Gestiona múltiples empleados simultáneamente
-- **Validación automática**: Verifica datos antes del envío
-- **Envío seguro**: Encriptación de PDFs con contraseñas personalizadas
-- **Interfaz intuitiva**: Diseño paso a paso para facilitar el uso
-- **Respaldo automático**: Backup antes de realizar cambios
-- **Informes detallados**: Seguimiento completo del proceso de envío
+Processes employee payrolls from PDF documents and sends them via email. Features a step-by-step workflow with data validation, error handling, and reporting.
 
-## Requisitos del Sistema
+## Features
 
-### Software Necesario
-- Python 3.9 o superior
-- Tkinter (incluido en la mayoría de instalaciones Python)
-- Dependencias especificadas en `requirements.txt`
+### Core Functionality
+- **Multi-step Workflow**: Four-stage process with sequential navigation security
+- **PDF Processing**: Extract individual payrolls from master PDF documents
+- **Email Distribution**: Automated email sending with robust retry logic
+- **Data Validation**: Comprehensive employee data verification and mapping
+- **Encrypted Storage**: Secure password storage with optional encryption
 
-### Sistemas Operativos Soportados
-- Windows 10/11
-- macOS 10.14+
-- Linux (Ubuntu, Debian, CentOS, etc.)
+### User Interface
+- Windows-style interface
+- Real-time progress tracking
+- Error reporting with recommendations
+- Context-sensitive tooltips
+- Cross-platform support (Windows, macOS, Linux)
 
-## Instalación
+### Reporting
+- Excel reports with formatting
+- Success/error statistics
+- Audit trail with timestamps
 
-1. **Clonar el repositorio**
-   ```bash
-   git clone [URL_DEL_REPOSITORIO]
-   cd Pdf-Manipulation-Test
-   ```
+### Technical Features
+- SMTP with retry logic
+- PDF encryption
+- Audio notifications
+- Customizable templates
+- Automatic logging
 
-2. **Crear entorno virtual** (recomendado)
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   # o
-   venv\Scripts\activate     # Windows
-   ```
+## Technology Stack
 
-3. **Instalar dependencias**
-   ```bash
-   pip install -r requirements.txt
-   ```
+- **Python 3.9+**: Core application framework
+- **Tkinter**: GUI framework with professional styling
+- **PyMuPDF (fitz)**: PDF processing and manipulation
+- **pikepdf**: PDF encryption capabilities
+- **pandas**: Data processing and CSV/Excel handling
+- **openpyxl**: Excel report generation with formatting
+- **cryptography**: Secure password encryption (optional)
+- **smtplib**: Email sending with SSL/TLS support
 
-4. **Ejecutar la aplicación**
-   ```bash
-   python sistema_nominas/main.py
-   ```
+## Installation
 
-## Uso de la Aplicación
+### Prerequisites
 
-### Paso 1: Selección de Archivos
-- Seleccione el archivo PDF maestro con las nóminas
-- Elija el archivo Excel/CSV con los datos de empleados
-- Configure el mapeo de columnas (automático en la mayoría de casos)
+Ensure Python 3.9 or higher is installed on your system.
 
-### Paso 2: Verificación de Datos
-- Revise la lista de empleados y sus datos
-- Corrija cualquier error detectado automáticamente
-- Valide que toda la información está completa
+### Dependencies
 
-### Paso 3: Envío de Correos
-- Configure los parámetros de correo electrónico
-- Revise la configuración antes del envío
-- Inicie el proceso de envío masivo
+Install required packages:
 
-## Configuración
-
-La aplicación utiliza un archivo `settings.ini` para almacenar:
-- Configuración de servidor de correo
-- Últimos archivos utilizados
-- Preferencias de usuario
-
-## Estructura del Proyecto
-
-```
-sistema_nominas/
-├── main.py              # Punto de entrada de la aplicación
-├── logic/               # Lógica de negocio
-│   ├── file_handler.py  # Manejo de archivos
-│   ├── email_sender.py  # Envío de correos
-│   └── settings.py      # Configuración
-├── ui/                  # Interfaz de usuario
-│   ├── main_window.py   # Ventana principal
-│   ├── paso1.py         # Selección de archivos
-│   ├── paso2.py         # Verificación
-│   └── paso3.py         # Envío
-└── employee_data/       # Datos de ejemplo y utilidades
-```
-
-## Solución de Problemas
-
-### Error: "ModuleNotFoundError"
-Asegúrese de que todas las dependencias estén instaladas:
 ```bash
 pip install -r requirements.txt
 ```
 
-### Error: "tkinter no encontrado"
-En Linux, instale tkinter:
+### System-Specific Requirements
+
+#### Linux
 ```bash
-sudo apt-get install python3-tk
+# Ubuntu/Debian
+sudo apt-get install python3-tk python3-pil python3-pil.imagetk
+
+# For enhanced audio support
+sudo apt-get install pulseaudio-utils alsa-utils
 ```
 
-### Problemas con PDFs
-Verifique que PyMuPDF esté correctamente instalado:
-```bash
-pip install pymupdf
+#### Windows
+No additional system packages required. All dependencies are included with Python or pip packages.
+
+#### macOS
+No additional system packages required. Audio feedback uses built-in system sounds.
+
+## Quick Start
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd payroll-system
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run the application**:
+   ```bash
+   python sistema_nominas/main.py
+   ```
+
+4. **First-time setup**:
+   - Configure email credentials in Settings
+   - Set up SMTP server details
+   - Choose output folder preferences
+
+## Application Workflow
+
+### Step 1: File Selection
+- Select master PDF containing all payrolls
+- Choose employee data file (CSV or Excel)
+- Map data columns to required fields (NIF, Name, Last Name, Email)
+- Preview data to verify correct mapping
+
+### Step 2: Data Verification
+- Review extracted employee information
+- Validate NIF matches between PDF and data file
+- Identify and resolve data inconsistencies
+- Preview individual payroll pages
+
+### Step 3: Email Distribution
+- Send encrypted payroll PDFs to employees
+- Monitor real-time sending progress
+- Handle errors with automatic retry logic
+- Track successful and failed deliveries
+
+### Step 4: Process Completion
+- Review comprehensive statistics
+- Access generated reports and files
+- Open output folders for manual review
+- Start new processing cycle if needed
+
+## Configuration
+
+### Email Settings
+- **SMTP Server**: Configure your email provider's SMTP settings
+- **Authentication**: Support for standard and app-specific passwords
+- **Templates**: Customize email subject and body templates
+- **Security**: Optional password encryption for enhanced security
+
+### File Formats
+- **PDF Passwords**: Set master passwords for enhanced security
+- **Filename Templates**: Customize output filename patterns
+- **Output Organization**: Automatic folder structure with date-based organization
+
+### Advanced Options
+- **Retry Logic**: Configurable retry attempts and delays
+- **Batch Processing**: Adjust batch sizes and timing
+- **Logging Levels**: Control log detail and retention
+- **Sound Notifications**: Enable/disable audio feedback
+
+## Output Structure
+
+The application creates organized output folders:
+
+```
+nominas_YYYY_MM/
+├── pdfs_enviados/          # Successfully sent payrolls (encrypted)
+├── pdfs_pendientes/        # Unprocessed payrolls (unencrypted)
+├── master_pdf_copy.pdf     # Copy of original PDF
+├── reporte_envio_*.xlsx    # Comprehensive Excel report
+└── resumen_proceso.txt     # Quick summary report
 ```
 
-## Diagnóstico del Sistema
+## Troubleshooting
 
-Use el script de diagnóstico para verificar la configuración:
+### Common Issues
+
+**Application won't start**:
+- Run `python sistema_nominas/diagnostico.py` for system diagnostics
+- Verify all dependencies are installed
+- Check Python version compatibility
+
+**Email sending fails**:
+- Verify SMTP settings and credentials
+- Check firewall and antivirus settings
+- Ensure app-specific passwords are used for Gmail/Outlook
+
+**PDF processing errors**:
+- Verify PDF is not password-protected
+- Check NIF format in employee data
+- Ensure employee data file is properly formatted
+
+**Linux-specific issues**:
+- Install tkinter: `sudo apt-get install python3-tk`
+- Install PIL support: `sudo apt-get install python3-pil.imagetk`
+- Check audio system for sound notifications
+
+### Diagnostic Tools
+
+Run the built-in diagnostic script:
 ```bash
 python sistema_nominas/diagnostico.py
 ```
 
-## Seguridad
+This will check:
+- Python version compatibility
+- Required library availability
+- System-specific components
+- Audio system functionality
 
-- Los PDFs se encriptan antes del envío
-- Las contraseñas se generan de forma segura
-- No se almacenan credenciales en texto plano
-- Logs detallados para auditoría
+## Security Considerations
 
-## Soporte
+- **Password Storage**: Uses cryptographic encryption when available
+- **PDF Security**: Individual payrolls are encrypted with employee NIFs
+- **Email Security**: Supports SSL/TLS encrypted SMTP connections
+- **Data Handling**: Temporary files are automatically cleaned up
+- **Access Control**: Sequential workflow prevents unauthorized access to later steps
 
-Para reportar problemas o solicitar nuevas funcionalidades, consulte la documentación técnica en `sistema_nominas/README.md` o contacte al administrador del sistema.
+## Project Structure
 
-## Licencia
+```
+sistema_nominas/
+├── main.py                 # Application entry point
+├── logic/                  # Business logic modules
+│   ├── settings.py         # Configuration management
+│   ├── security.py         # Encryption and security
+│   ├── file_handler.py     # PDF and data file processing
+│   ├── email_sender.py     # Email distribution logic
+│   ├── email_reports.py    # Report generation
+│   └── ...
+├── ui/                     # User interface modules
+│   ├── main_window.py      # Main application window
+│   ├── paso1.py           # Step 1: File selection
+│   ├── paso2.py           # Step 2: Data verification
+│   ├── paso3.py           # Step 3: Email sending
+│   └── ...
+├── utils/                  # Utility modules
+│   ├── logger.py          # Logging system
+│   └── sound_manager.py   # Audio notifications
+└── diagnostico.py         # System diagnostic tool
+```
 
-Este proyecto es de uso interno. Todos los derechos reservados.
+## Development Standards
+
+- Professional English comments and documentation
+- Comprehensive error handling with user-friendly messages
+- Modular design with clear separation of concerns
+- Type hints and docstrings for all public interfaces
+- Logging integration throughout all modules
+
+## Support
+
+For technical support or bug reports, please provide:
+- Complete diagnostic output (`python sistema_nominas/diagnostico.py`)
+- Log files from the `logs/` directory
+- Detailed description of the issue
+- System information (OS, Python version)
+
+## License
+
+This software is proprietary and intended for internal business use only.

@@ -1,5 +1,8 @@
 """
-Módulo principal para el envío de nóminas por email - Version refactorizada.
+Main module for payroll email sending - Refactored version.
+
+Handles robust email sending with retry logic, error recovery, and comprehensive
+logging. Includes PDF processing, encryption, and batch sending capabilities.
 """
 import os
 import smtplib
@@ -24,12 +27,32 @@ from utils.logger import log_info, log_error, log_warning, log_debug
 
 
 def generar_uuid_corto():
-    """Genera un UUID de 4 caracteres alfanuméricos."""
+    """Generate a short 4-character alphanumeric UUID.
+    
+    Used for creating temporary unique identifiers in filenames
+    when processing pending payrolls that lack proper employee data.
+    
+    Returns:
+        str: 4-character random alphanumeric string
+    """
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
 
 
 def procesar_pdf_pendiente(doc_maestro, tarea, output_dir, config):
-    """Crea PDF individual sin cifrado para procesamiento manual."""
+    """Create individual PDF without encryption for manual processing.
+    
+    Generates unencrypted PDF files for payrolls that failed automatic processing.
+    Uses UUID-based naming to avoid conflicts while maintaining traceability.
+    
+    Args:
+        doc_maestro (fitz.Document): Master PDF document containing all payrolls
+        tarea (dict): Task object with page and employee information
+        output_dir (str): Output directory for pending PDF files
+        config (ConfigParser): Application configuration
+        
+    Returns:
+        str: Path to the created PDF file
+    """
     import fitz
     
     # Generar UUIDs para nombre y apellido
@@ -56,32 +79,52 @@ def procesar_pdf_pendiente(doc_maestro, tarea, output_dir, config):
 
 
 def validar_email_basico(email):
-    """Validación básica de formato de email."""
+    """Basic email format validation.
+    
+    Performs essential email format checks without requiring external libraries.
+    Validates structure, character set, and reasonable length constraints.
+    
+    Args:
+        email (str): Email address to validate
+        
+    Returns:
+        bool: True if email format appears valid
+    """
     if not email or not isinstance(email, str):
         return False
     
     email = email.strip().lower()
     
-    # Verificaciones básicas
+    # Basic format checks
     if '@' not in email or '.' not in email:
         return False
         
-    # Verificar que no empiece o termine con caracteres especiales
+    # Check for invalid starting or ending characters
     if email.startswith(('@', '.', '-', '_')) or email.endswith(('.', '-', '_')):
         return False
         
-    # Verificar longitud razonable
+    # Check reasonable length constraints
     if len(email) < 5 or len(email) > 100:
         return False
         
-    # Verificar caracteres válidos (básico)
+    # Validate character set using regex pattern
     import re
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return bool(re.match(pattern, email))
 
 
 def generar_estadisticas_envio(tareas):
-    """Genera estadísticas detalladas de las tareas a procesar."""
+    """Generate detailed statistics for tasks to be processed.
+    
+    Analyzes task list to provide metrics on success probability,
+    potential issues, and data quality before starting email sending.
+    
+    Args:
+        tareas (list): List of task objects to analyze
+        
+    Returns:
+        dict: Statistics including validation counts and email analysis
+    """
     stats = {
         'total_validadas': len([t for t in tareas if t['status'] == '[OK]']),
         'total_errores': len([t for t in tareas if t['status'].startswith('[ERROR]')]),
@@ -90,7 +133,7 @@ def generar_estadisticas_envio(tareas):
         'emails_duplicados': 0
     }
     
-    # Analizar emails
+    # Analyze email addresses for validity and duplicates
     emails_vistos = set()
     for tarea in tareas:
         if tarea['status'] == '[OK]':

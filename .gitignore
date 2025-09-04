@@ -28,5 +28,7 @@ __pycache__/
 # Archivos de log
 *.log
 logs/
-*.txt
 resumen_proceso.txt
+
+# Permitir requirements.txt (no ignorar)
+!requirements.txt

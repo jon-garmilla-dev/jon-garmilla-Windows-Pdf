@@ -4,7 +4,17 @@ import re
 
 
 def leer_cabeceras_empleados(filepath):
-    """Lee solo las cabeceras de un archivo CSV o Excel."""
+    """Read column headers from a CSV or Excel file.
+    
+    Extracts only the column names without loading the full dataset.
+    Useful for mapping columns before processing the complete file.
+    
+    Args:
+        filepath (str): Path to the CSV or Excel file
+        
+    Returns:
+        list: Column names from the file, empty list if error occurs
+    """
     try:
         if filepath.endswith('.csv'):
             return pd.read_csv(filepath, nrows=0).columns.tolist()
@@ -17,7 +27,17 @@ def leer_cabeceras_empleados(filepath):
 
 
 def leer_archivo_empleados(filepath):
-    """Lee un archivo de empleados, detectando si es CSV o Excel."""
+    """Read employee data file, automatically detecting CSV or Excel format.
+    
+    Args:
+        filepath (str): Path to the employee data file
+        
+    Returns:
+        pandas.DataFrame: Employee data
+        
+    Raises:
+        ValueError: If file format is not supported
+    """
     if filepath.endswith('.csv'):
         return pd.read_csv(filepath)
     elif filepath.endswith(('.xlsx', '.xls')):
@@ -27,18 +47,29 @@ def leer_archivo_empleados(filepath):
 
 
 def analizar_archivos(pdf_path, empleados_path, columnas_map):
-    """Analiza los archivos con el mapeo de columnas y devuelve una lista de tareas."""
+    """Analyze PDF and employee files to create processing tasks.
+    
+    Extracts NIFs from each PDF page and matches them with employee data.
+    Creates task objects that contain all information needed for payroll processing.
+    
+    Args:
+        pdf_path (str): Path to the master PDF file containing all payrolls
+        empleados_path (str): Path to the employee data file (CSV/Excel)
+        columnas_map (dict): Mapping of required fields to actual column names
+        
+    Returns:
+        dict: Contains 'tareas' list with task objects, or 'error' message if failed
+    """
     try:
         df = leer_archivo_empleados(empleados_path)
-        # Validar que las columnas mapeadas existen en el DataFrame
         for col_key, col_name in columnas_map.items():
             if col_name not in df.columns:
                 raise ValueError(
-                    f"La columna '{col_name}' asignada a '{col_key}' no se "
-                    f"encuentra en el archivo."
+                    f"Column '{col_name}' mapped to '{col_key}' "
+                    f"not found in file."
                 )
     except Exception as e:
-        return {"error": f"Error al leer el archivo de empleados:\n{e}"}
+        return {"error": f"Error reading employee file:\n{e}"}
 
     doc_maestro = fitz.open(pdf_path)
     tareas = []
@@ -53,26 +84,23 @@ def analizar_archivos(pdf_path, empleados_path, columnas_map):
         if nif_match:
             nif = nif_match.group(1)
             tarea["nif"] = nif
-            # Usar el mapeo de columnas para la búsqueda
-            info = df[df[columnas_map["nif"]] == nif]
+                info = df[df[columnas_map["nif"]] == nif]
             if not info.empty:
-                # Mantener nombre y apellidos separados (NO juntar)
-                nombre_solo = info.iloc[0][columnas_map["nombre"]]
+                        nombre_solo = info.iloc[0][columnas_map["nombre"]]
                 if "apellidos" in columnas_map and columnas_map["apellidos"]:
                     apellidos_campo = info.iloc[0][columnas_map["apellidos"]]
                 else:
                     apellidos_campo = ""
                 
-                # Obtener la posición original si existe
-                posicion_original = None
+                        posicion_original = None
                 if "POS." in df.columns:
                     posicion_original = info.iloc[0]["POS."]
                 
                 tarea.update({
-                    "nombre": nombre_solo,  # Solo el nombre, sin apellidos
-                    "apellidos": apellidos_campo,  # Apellidos separados
+                    "nombre": nombre_solo,  # First name only, without last name
+                    "apellidos": apellidos_campo,  # Last name separate field
                     "email": info.iloc[0][columnas_map["email"]],
-                    "posicion_original": posicion_original,  # Mantener orden original
+                    "posicion_original": posicion_original,  # Maintain original order
                     "status": "[OK]"
                 })
             else:

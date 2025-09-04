@@ -1,6 +1,8 @@
 """
-Sistema de notificaciones sonoras para la aplicación de nóminas.
-Genera sonidos profesionales usando la librería estándar de Python.
+Sound notification system for the payroll application.
+
+Generates professional system sounds using Python standard library.
+Provides cross-platform audio feedback for business operations.
 """
 import platform
 import threading
@@ -9,19 +11,30 @@ from utils.logger import log_debug, log_warning
 
 
 class SoundManager:
-    """Gestor de sonidos para notificaciones empresariales."""
+    """Sound manager for enterprise notifications.
+    
+    Provides cross-platform sound feedback for application events.
+    Supports Windows, macOS, and Linux with fallback mechanisms.
+    """
     
     def __init__(self):
         self.enabled = True
         self._setup_sound_system()
     
     def _setup_sound_system(self):
-        """Configura el sistema de sonidos según la plataforma."""
+        """Configure sound system based on current platform.
+        
+        Detects operating system and prepares appropriate sound mechanisms.
+        """
         self.system = platform.system()
         log_debug(f"Iniciando sistema de sonidos para {self.system}")
         
     def _play_system_sound(self, sound_type):
-        """Reproduce sonidos usando APIs nativas del sistema."""
+        """Play system sounds using native platform APIs.
+        
+        Args:
+            sound_type (str): Type of sound to play ('success', 'error', 'warning')
+        """
         if not self.enabled:
             return
             
@@ -36,7 +49,13 @@ class SoundManager:
             log_warning(f"No se pudo reproducir sonido {sound_type}: {e}")
     
     def _play_windows_sound(self, sound_type):
-        """Reproduce sonidos nativos de Windows."""
+        """Play native Windows system sounds.
+        
+        Uses winsound module to play built-in Windows notification sounds.
+        
+        Args:
+            sound_type (str): Sound type identifier
+        """
         import winsound
         
         sound_map = {
@@ -50,7 +69,13 @@ class SoundManager:
             log_debug(f"Reproducido sonido Windows: {sound_type}")
     
     def _play_macos_sound(self, sound_type):
-        """Reproduce sonidos nativos de macOS."""
+        """Play native macOS system sounds.
+        
+        Uses afplay command to play built-in macOS system sounds.
+        
+        Args:
+            sound_type (str): Sound type identifier
+        """
         import subprocess
         
         sound_map = {
@@ -65,10 +90,17 @@ class SoundManager:
             log_debug(f"Reproducido sonido macOS: {sound_type}")
     
     def _play_linux_sound(self, sound_type):
-        """Reproduce sonidos en Linux usando múltiples métodos."""
+        """Play sounds on Linux using multiple fallback methods.
+        
+        Tries different audio systems in order of preference:
+        PulseAudio, ALSA, speaker-test, and terminal bell.
+        
+        Args:
+            sound_type (str): Sound type identifier
+        """
         import subprocess
         
-        # Intentar diferentes métodos en orden de preferencia
+        # Try different audio methods in order of preference
         methods = [
             self._try_paplay,
             self._try_aplay,
@@ -84,7 +116,14 @@ class SoundManager:
         log_warning(f"No se pudo reproducir sonido en Linux: {sound_type}")
     
     def _try_paplay(self, sound_type):
-        """Intenta usar paplay (PulseAudio)."""
+        """Attempt to use paplay (PulseAudio system).
+        
+        Args:
+            sound_type (str): Sound type identifier
+            
+        Returns:
+            bool: True if sound was played successfully
+        """
         try:
             import subprocess
             sound_files = {
@@ -102,10 +141,19 @@ class SoundManager:
         return False
     
     def _try_aplay(self, sound_type):
-        """Intenta usar aplay (ALSA)."""
+        """Attempt to use aplay (ALSA system).
+        
+        Generates tones with different frequencies for different sound types.
+        
+        Args:
+            sound_type (str): Sound type identifier
+            
+        Returns:
+            bool: True if sound was played successfully
+        """
         try:
             import subprocess
-            # Generar tonos con frecuencias diferentes
+            # Generate tones with different frequencies for each sound type
             frequencies = {
                 'success': '800',
                 'error': '200', 
@@ -121,7 +169,16 @@ class SoundManager:
         return False
     
     def _try_speaker_beep(self, sound_type):
-        """Intenta usar el altavoz del sistema."""
+        """Attempt to use system speaker for beep sounds.
+        
+        Uses the 'beep' command if available on the system.
+        
+        Args:
+            sound_type (str): Sound type identifier
+            
+        Returns:
+            bool: True if sound was played successfully
+        """
         try:
             import subprocess
             beep_patterns = {
@@ -140,7 +197,16 @@ class SoundManager:
         return False
     
     def _try_bell(self, sound_type):
-        """Último recurso: usar el bell del terminal."""
+        """Last resort: use terminal bell character.
+        
+        Prints ASCII bell character as fallback when other methods fail.
+        
+        Args:
+            sound_type (str): Sound type identifier (unused in this method)
+            
+        Returns:
+            bool: True if bell was triggered successfully
+        """
         try:
             print('\a', end='', flush=True)  # ASCII bell character
             return True
@@ -149,61 +215,81 @@ class SoundManager:
         return False
     
     def _play_async(self, sound_type):
-        """Reproduce sonido en hilo separado para no bloquear la UI."""
+        """Play sound in separate thread to avoid blocking UI.
+        
+        Args:
+            sound_type (str): Sound type identifier
+        """
         thread = threading.Thread(target=self._play_system_sound, 
                                  args=(sound_type,), daemon=True)
         thread.start()
     
     def play_success(self):
-        """Reproduce sonido de éxito - proceso completado."""
+        """Play success sound - process completed successfully."""
         log_debug("Reproduciendo sonido de éxito")
         self._play_async('success')
     
     def play_error(self):
-        """Reproduce sonido de error - fallo crítico."""
+        """Play error sound - critical failure occurred."""
         log_debug("Reproduciendo sonido de error")
         self._play_async('error')
     
     def play_warning(self):
-        """Reproduce sonido de advertencia - requiere atención."""
+        """Play warning sound - attention required."""
         log_debug("Reproduciendo sonido de advertencia") 
         self._play_async('warning')
     
     def set_enabled(self, enabled):
-        """Habilita o deshabilita los sonidos."""
+        """Enable or disable sound notifications.
+        
+        Args:
+            enabled (bool): Whether to enable sound notifications
+        """
         self.enabled = enabled
         log_debug(f"Sonidos {'habilitados' if enabled else 'deshabilitados'}")
     
     def is_enabled(self):
-        """Retorna si los sonidos están habilitados."""
+        """Return whether sound notifications are enabled.
+        
+        Returns:
+            bool: True if sounds are enabled
+        """
         return self.enabled
 
 
-# Instancia global del gestor de sonidos
+# Global sound manager instance
 sound_manager = SoundManager()
 
 
-# Funciones helper para usar desde cualquier módulo
+# Helper functions for use from any module
 def play_success_sound():
-    """Reproduce sonido de éxito."""
+    """Play success notification sound."""
     sound_manager.play_success()
 
 
 def play_error_sound():
-    """Reproduce sonido de error.""" 
+    """Play error notification sound."""
     sound_manager.play_error()
 
 
 def play_warning_sound():
-    """Reproduce sonido de advertencia."""
+    """Play warning notification sound."""
     sound_manager.play_warning()
 
 
 def set_sounds_enabled(enabled):
-    """Habilita/deshabilita los sonidos."""
+    """Enable or disable sound notifications.
+    
+    Args:
+        enabled (bool): Whether to enable sounds
+    """
     sound_manager.set_enabled(enabled)
 
 
 def are_sounds_enabled():
-    """Verifica si los sonidos están habilitados."""
+    """Check if sound notifications are enabled.
+    
+    Returns:
+        bool: True if sounds are enabled
+    """
     return sound_manager.is_enabled()

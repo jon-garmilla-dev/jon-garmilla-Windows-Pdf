@@ -14,21 +14,29 @@ try:
     )
     ENCRYPTION_AVAILABLE = True
 except ImportError:
-    # Si falla la importación (falta cryptography), usar sin cifrado
+    # Handle missing cryptography library gracefully
+    # Application will function but passwords will be stored in plain text
     ENCRYPTION_AVAILABLE = False
     messagebox.showwarning(
-        "Cifrado no disponible",
-        "La librería de cifrado no está instalada.\n"
-        "Las contraseñas se guardarán en texto plano.\n"
-        "Para mayor seguridad, instale: pip install cryptography"
+        "Encryption Unavailable",
+        "The cryptography library is not installed.\n"
+        "Passwords will be stored in plain text.\n"
+        "For enhanced security, install: pip install cryptography"
     )
 
 
 def load_settings():
-    """Carga la configuración desde settings.ini con descifrado automático."""
+    """Load application configuration from settings.ini with automatic decryption.
+    
+    Handles first-time setup by creating default configuration if no settings file exists.
+    Validates and ensures all required configuration sections are present.
+    Automatically decrypts sensitive fields when encryption is available.
+    
+    Returns:
+        ConfigParser: Configuration object with decrypted sensitive data
+    """
     config = configparser.ConfigParser()
     
-    # Primera ejecución - crear configuración por defecto
     if not os.path.exists(SETTINGS_FILE):
         if ENCRYPTION_AVAILABLE:
             config = create_default_config()
@@ -40,10 +48,8 @@ def load_settings():
         save_settings(config)
         return config
     
-    # Cargar configuración existente
     config.read(SETTINGS_FILE, encoding='utf-8')
     
-    # Validar secciones mínimas
     if 'Email' not in config:
         config['Email'] = {'email_origen': '', 'password': ''}
     if 'SMTP' not in config:
@@ -62,7 +68,6 @@ def load_settings():
             'excel_empleados': ''
         }
     
-    # Descifrar si está disponible
     if ENCRYPTION_AVAILABLE:
         config = decrypt_sensitive_config(config)
     
@@ -70,32 +75,38 @@ def load_settings():
 
 
 def save_settings(config):
-    """Guarda la configuración en settings.ini con cifrado automático."""
-    # Hacer backup de la configuración actual
+    """Save configuration to settings.ini with automatic encryption.
+    
+    Creates backup of current settings before saving to prevent data loss.
+    Encrypts sensitive fields when encryption is available.
+    Restores backup if save operation fails.
+    
+    Args:
+        config (ConfigParser): Configuration object to save
+        
+    Raises:
+        Exception: If save operation fails after backup restoration
+    """
     if os.path.exists(SETTINGS_FILE):
         try:
             shutil.copy(SETTINGS_FILE, SETTINGS_FILE + '.backup')
         except OSError:
-            pass  # Fallar silenciosamente si no se puede hacer backup
+            pass  # Fail silently if backup cannot be created
     
     try:
-        # Cifrar campos sensibles si está disponible
-        if ENCRYPTION_AVAILABLE:
+            if ENCRYPTION_AVAILABLE:
             config_to_save = encrypt_sensitive_config(config)
         else:
             config_to_save = config
         
-        # Guardar configuración
-        with open(SETTINGS_FILE, 'w', encoding='utf-8') as configfile:
+            with open(SETTINGS_FILE, 'w', encoding='utf-8') as configfile:
             config_to_save.write(configfile)
             
     except Exception as e:
-        # Si falla, restaurar backup
-        if os.path.exists(SETTINGS_FILE + '.backup'):
+            if os.path.exists(SETTINGS_FILE + '.backup'):
             shutil.copy(SETTINGS_FILE + '.backup', SETTINGS_FILE)
         raise Exception(f"Error al guardar configuración: {e}")
     
-    # Limpiar backup si todo fue bien
     if os.path.exists(SETTINGS_FILE + '.backup'):
         try:
             os.remove(SETTINGS_FILE + '.backup')
@@ -104,14 +115,17 @@ def save_settings(config):
 
 
 def reset_settings():
-    """Resetea la configuración a valores por defecto."""
+    """Reset configuration to default values.
+    
+    Removes existing settings file and encryption key file.
+    Next application start will create fresh default configuration.
+    """
     if os.path.exists(SETTINGS_FILE):
         try:
             os.remove(SETTINGS_FILE)
         except OSError:
             pass
     
-    # Limpiar archivo de clave si existe
     if ENCRYPTION_AVAILABLE and os.path.exists('.secret_key'):
         try:
             os.remove('.secret_key')

@@ -1,5 +1,8 @@
 """
-Sistema de logging centralizado para la aplicación de nóminas.
+Centralized logging system for the payroll application.
+
+Provides structured logging with automatic file rotation, console output,
+and log cleanup for enterprise payroll processing operations.
 """
 import logging
 import os
@@ -8,7 +11,11 @@ from datetime import datetime
 
 
 class NominaLogger:
-    """Logger centralizado para la aplicación."""
+    """Centralized logger for the payroll application.
+    
+    Implements singleton pattern to ensure consistent logging across all modules.
+    Automatically manages log files with rotation and cleanup based on retention policy.
+    """
     
     _instance = None
     _logger = None
@@ -23,33 +30,37 @@ class NominaLogger:
             self._setup_logger()
     
     def _setup_logger(self):
-        """Configura el logger con archivos rotatorios."""
-        # Crear directorio de logs
+        """Configure logger with rotating file handlers.
+        
+        Creates log directory, cleans up old logs, and sets up both file and console
+        handlers with appropriate formatting and log levels.
+        """
+        # Create logs directory if it doesn't exist
         logs_dir = 'logs'
         os.makedirs(logs_dir, exist_ok=True)
 
-        # Limpiar logs antiguos
+        # Clean up old log files based on retention policy
         self._limpiar_logs_antiguos(logs_dir)
         
-        # Timestamp para el archivo actual
+        # Generate timestamp for current log file
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         log_file = os.path.join(logs_dir, f'nominas_{timestamp}.log')
         
-        # Configurar logger
+        # Configure main logger instance
         self._logger = logging.getLogger('nominas_app')
         self._logger.setLevel(logging.DEBUG)
         
-        # Evitar duplicar handlers
+        # Avoid duplicate handlers on multiple initializations
         if not self._logger.handlers:
-            # Handler para archivo
+            # File handler for persistent logging
             file_handler = logging.FileHandler(log_file, encoding='utf-8')
             file_handler.setLevel(logging.DEBUG)
             
-            # Handler para consola
+            # Console handler for real-time monitoring
             console_handler = logging.StreamHandler()
             console_handler.setLevel(logging.INFO)
             
-            # Formato detallado
+            # Detailed formatting with timestamp and source location
             formatter = logging.Formatter(
                 '%(asctime)s - [%(levelname)8s] - '
                 '%(funcName)s:%(lineno)d - %(message)s'
@@ -62,14 +73,22 @@ class NominaLogger:
             self._logger.addHandler(console_handler)
     
     def get_logger(self):
-        """Retorna el logger configurado."""
+        """Return the configured logger instance.
+        
+        Returns:
+            logging.Logger: Configured logger with file and console handlers
+        """
         return self._logger
 
     def _limpiar_logs_antiguos(self, logs_dir, dias_a_mantener=60):
-        """Elimina archivos de log más antiguos que un número de días.
+        """Remove log files older than specified number of days.
         
-        Por defecto mantiene 60 días (2 meses) para uso mensual de nóminas.
-        Esto permite revisar logs del mes anterior en caso de problemas.
+        Default retention is 60 days (2 months) for monthly payroll operations.
+        This allows reviewing previous month's logs in case of issues.
+        
+        Args:
+            logs_dir (str): Directory containing log files
+            dias_a_mantener (int): Number of days to retain logs
         """
         try:
             limite_segundos = dias_a_mantener * 24 * 60 * 60
@@ -108,35 +127,69 @@ class NominaLogger:
         self._logger.critical(message, *args, **kwargs)
 
 
-# Instancia global del logger
+# Global logger instance for application-wide access
 logger = NominaLogger()
 
 
 def get_logger():
-    """Función helper para obtener el logger desde cualquier módulo."""
+    """Helper function to get logger from any module.
+    
+    Returns:
+        logging.Logger: Application logger instance
+    """
     return logger.get_logger()
 
 
 def log_info(message, *args, **kwargs):
-    """Helper function para logging info."""
+    """Helper function for info level logging.
+    
+    Args:
+        message (str): Log message
+        *args: Additional arguments for message formatting
+        **kwargs: Additional keyword arguments for logger
+    """
     logger.info(message, *args, **kwargs)
 
 
 def log_debug(message, *args, **kwargs):
-    """Helper function para logging debug.""" 
+    """Helper function for debug level logging.
+    
+    Args:
+        message (str): Log message
+        *args: Additional arguments for message formatting
+        **kwargs: Additional keyword arguments for logger
+    """
     logger.debug(message, *args, **kwargs)
 
 
 def log_warning(message, *args, **kwargs):
-    """Helper function para logging warning."""
+    """Helper function for warning level logging.
+    
+    Args:
+        message (str): Log message
+        *args: Additional arguments for message formatting
+        **kwargs: Additional keyword arguments for logger
+    """
     logger.warning(message, *args, **kwargs)
 
 
 def log_error(message, *args, **kwargs):
-    """Helper function para logging error."""
+    """Helper function for error level logging.
+    
+    Args:
+        message (str): Log message
+        *args: Additional arguments for message formatting
+        **kwargs: Additional keyword arguments for logger
+    """
     logger.error(message, *args, **kwargs)
 
 
 def log_critical(message, *args, **kwargs):
-    """Helper function para logging critical."""
+    """Helper function for critical level logging.
+    
+    Args:
+        message (str): Log message
+        *args: Additional arguments for message formatting
+        **kwargs: Additional keyword arguments for logger
+    """
     logger.critical(message, *args, **kwargs)
