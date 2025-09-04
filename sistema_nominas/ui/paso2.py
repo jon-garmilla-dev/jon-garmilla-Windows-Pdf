@@ -19,6 +19,71 @@ except Exception as e:
 from utils.sound_manager import play_warning_sound, play_error_sound
 
 
+class ToolTipButton:
+    """Clase para crear tooltips activados por botón."""
+    def __init__(self, button, text):
+        self.button = button
+        self.text = text
+        self.tipwindow = None
+        self.button.bind("<Button-1>", self.toggle_tooltip)
+        
+    def toggle_tooltip(self, event=None):
+        if self.tipwindow:
+            self.hide_tooltip()
+        else:
+            self.show_tooltip()
+            
+    def show_tooltip(self, event=None):
+        if self.tipwindow or not self.text:
+            return
+        
+        # Posicionar arriba y a la izquierda del botón para mejor visibilidad
+        x = self.button.winfo_rootx() - 350  # A la izquierda del botón
+        y = self.button.winfo_rooty() - 250  # Arriba del botón
+        
+        # Asegurarse de que no se salga de la pantalla
+        if x < 0:
+            x = 10
+        if y < 0:
+            y = 10
+        
+        self.tipwindow = tw = tk.Toplevel(self.button)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry("+%d+%d" % (x, y))
+        label = tk.Label(
+            tw, text=self.text, justify=tk.LEFT,
+            background="#ffffe0", relief=tk.SOLID, borderwidth=1,
+            font=("MS Sans Serif", 8, "normal"), wraplength=400,
+            padx=8, pady=6)
+        label.pack()
+        
+        # Solo cerrar cuando se hace clic fuera o se sale con el cursor del tooltip
+        tw.bind("<Leave>", self.hide_tooltip)
+        label.bind("<Leave>", self.hide_tooltip)
+        # Permitir mantener el tooltip cuando el cursor está sobre él
+        tw.bind("<Enter>", self.cancel_hide)
+        label.bind("<Enter>", self.cancel_hide)
+        
+        # No auto-ocultar automáticamente - solo por hover
+        # self.auto_hide_id = tw.after(10000, self.hide_tooltip)
+
+    def cancel_hide(self, event=None):
+        """Cancela el ocultado del tooltip cuando el cursor entra."""
+        pass
+
+    def hide_tooltip(self, event=None):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            # Cancelar el auto-hide si existe
+            if hasattr(self, 'auto_hide_id') and self.auto_hide_id:
+                try:
+                    tw.after_cancel(self.auto_hide_id)
+                except tk.TclError:
+                    pass
+            tw.destroy()
+
+
 class Paso2(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent, bg="#f0f0f0")
@@ -153,12 +218,13 @@ class Paso2(tk.Frame):
 
         # Configurar columnas con anchos apropiados
         headings = {
-            "Página": 80, "NIF": 120, "Nombre": 140, "Apellidos": 140,
-            "Email": 200, "Estado": 180
+            "Página": 80, "NIF": 120, "Nombre": 120, "Apellidos": 120,
+            "Email": 250, "Estado": 200
         }
         for col, width in headings.items():
             self.tree.heading(col, text=col, anchor="w")
-            self.tree.column(col, width=width, anchor="w", stretch=False, minwidth=width)
+            # Permitir que las columnas se estiren para ocupar todo el ancho
+            self.tree.column(col, width=width, anchor="w", stretch=True, minwidth=width//2)
 
         # Estilos de filas con colores Windows
         self.tree.tag_configure('ok', background='#d4edda', foreground='#155724')
@@ -182,14 +248,6 @@ class Paso2(tk.Frame):
         botones_frame = tk.Frame(acciones_frame, bg="#f0f0f0")
         botones_frame.pack(fill="x", padx=15, pady=10)
         
-        # Botones de acción
-        self.btn_editar = tk.Button(
-            botones_frame, text="Corregir Seleccionado",
-            font=("MS Sans Serif", 8), width=20, height=1,
-            command=self.corregir_seleccionado,
-            relief="raised", bd=2, bg="#e0e0e0"
-        )
-        self.btn_editar.pack(side="left", padx=(0, 10))
         
         self.btn_actualizar = tk.Button(
             botones_frame, text="Volver a Verificar",
@@ -208,14 +266,36 @@ class Paso2(tk.Frame):
         )
         self.btn_ver_pdf.pack(side="right", padx=(0, 10))
         
-        # Ayuda
+        # Botón de ayuda como tooltip
         self.btn_ayuda = tk.Button(
-            botones_frame, text="¿Necesita Ayuda?",
-            font=("MS Sans Serif", 8), width=15, height=1,
-            command=self.mostrar_ayuda,
-            relief="raised", bd=2, bg="#fff0e0"
+            botones_frame, text="?",
+            font=("MS Sans Serif", 8), width=3, height=1,
+            relief="raised", bd=2, bg="#e0e0e0"
         )
         self.btn_ayuda.pack(side="right")
+        
+        # Tooltip con ayuda contextual
+        ayuda_tooltip = """GUÍA RÁPIDA - VERIFICACIÓN DE DATOS
+
+¿Qué estoy viendo?
+Esta tabla muestra los datos encontrados en su PDF.
+Cada fila representa una nómina individual.
+
+Estados:
+[OK] - Datos completos, listos para enviar
+[ERROR] - Faltan datos, necesita corrección  
+[ADVERTENCIA] - Revisar manualmente
+
+¿Cómo corregir errores?
+1. Haga doble clic en la fila con error
+2. Revise la nómina en la vista previa
+3. Complete los datos incorrectos
+4. Haga clic en "Guardar"
+
+¿Muchos errores?
+Use "Volver a Verificar" después de corregir 
+los archivos originales."""
+        ToolTipButton(self.btn_ayuda, ayuda_tooltip)
 
         # --- Navegación estilo Windows ---
         nav_frame = tk.Frame(self, bg="#f0f0f0")
@@ -485,6 +565,25 @@ class Paso2(tk.Frame):
             preview_canvas.create_image(10, 10, anchor="nw", image=preview_photo)
             preview_canvas.configure(scrollregion=preview_canvas.bbox("all"))
             
+            # Habilitar scroll con rueda del ratón multiplataforma
+            def scroll_canvas_windows(event):
+                preview_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            
+            def scroll_canvas_linux(event):
+                if event.num == 4:
+                    preview_canvas.yview_scroll(-1, "units")
+                elif event.num == 5:
+                    preview_canvas.yview_scroll(1, "units")
+            
+            # Configurar eventos según plataforma
+            import sys
+            if sys.platform == "win32":
+                preview_canvas.bind("<MouseWheel>", scroll_canvas_windows)
+            else:
+                # Linux y macOS
+                preview_canvas.bind("<Button-4>", scroll_canvas_linux)  # Rueda arriba
+                preview_canvas.bind("<Button-5>", scroll_canvas_linux)  # Rueda abajo
+            
             # Mantener referencia a la imagen
             ventana.preview_photo = preview_photo
             
@@ -600,21 +699,12 @@ class Paso2(tk.Frame):
         def cancelar():
             ventana.destroy()
         
-        def ver_pdf_completo():
-            """Abre el PDF en una ventana más grande."""
-            # Reutilizar el método principal con mejor manejo de errores
-            self.abrir_pdf_completo()
-        
         # Botones principales
         tk.Button(btn_frame, text="Guardar", command=guardar, 
                  font=("MS Sans Serif", 8, "bold"), width=12, bg="#e0e0e0").pack(side="left", padx=5)
         tk.Button(btn_frame, text="Cancelar", command=cancelar,
                  font=("MS Sans Serif", 8), width=12, bg="#e0e0e0").pack(side="left", padx=5)
         
-        # Botón para abrir PDF completo
-        if preview_photo:
-            tk.Button(btn_frame, text="Ver PDF Completo", command=ver_pdf_completo,
-                     font=("MS Sans Serif", 7), width=15, bg="#fff8e0").pack(side="right", padx=5)
 
     def reverificar_datos(self):
         """Vuelve a ejecutar el análisis de archivos."""
@@ -895,62 +985,6 @@ class Paso2(tk.Frame):
             font=("MS Sans Serif", 8, "bold"), width=12, bg="#e0e0e0"
         ).pack(side="left", padx=5)
 
-    def mostrar_ayuda(self):
-        """Muestra ayuda contextual para usuarios no técnicos."""
-        ayuda_text = """
-GUÍA RÁPIDA - VERIFICACIÓN DE DATOS
-
-¿Qué estoy viendo?
-• Esta tabla muestra los datos que se encontraron automáticamente en su archivo PDF
-• Cada fila representa una nómina individual
-
-Estados posibles:
-[OK]: Los datos están completos y listos para enviar
-[ERROR]: Faltan datos importantes, necesita corrección
-[ADVERTENCIA]: Revise manualmente los datos
-
-¿Cómo ver las nóminas?
-• Use "Ver PDF Completo" para abrir todo el archivo
-• Al hacer doble clic en una fila verá esa página específica
-
-¿Cómo corregir errores?
-1. Haga doble clic en la fila con error
-2. Revise la nómina en la vista previa (lado izquierdo)
-3. Complete o corrija los datos (lado derecho)
-4. Haga clic en "Guardar"
-
-¿Qué hacer si hay muchos errores?
-• Revise que el archivo PDF sea correcto
-• Verifique que el archivo de empleados tenga todos los datos
-• Use "Volver a Verificar" después de corregir los archivos
-
-¿Necesita más ayuda?
-Contacte con soporte técnico o consulte el manual de usuario.
-        """
-        
-        ventana_ayuda = tk.Toplevel(self)
-        ventana_ayuda.title("Ayuda - Verificación de Datos")
-        ventana_ayuda.geometry("500x400")
-        ventana_ayuda.configure(bg="#f0f0f0")
-        ventana_ayuda.grab_set()
-        
-        # Centrar
-        ventana_ayuda.transient(self.controller)
-        
-        text_widget = tk.Text(
-            ventana_ayuda, wrap=tk.WORD, font=("MS Sans Serif", 9),
-            bg="#ffffff", relief="sunken", bd=2
-        )
-        text_widget.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        text_widget.insert("1.0", ayuda_text)
-        text_widget.config(state="disabled")  # Solo lectura
-        
-        tk.Button(
-            ventana_ayuda, text="Cerrar", 
-            command=ventana_ayuda.destroy,
-            font=("MS Sans Serif", 8), width=12, bg="#e0e0e0"
-        ).pack(pady=10)
 
     def ir_a_paso3(self):
         """Navega al paso 3 aplicando las correcciones manuales."""
