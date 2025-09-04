@@ -30,20 +30,21 @@ jobs:
       with:
         files: sistema_nominas/dist/GestorNominas.exe
         name: Release ${{ github.ref_name }}
+        generate_release_notes: true
         body: |
           ## Gestor Nominas ${{ github.ref_name }}
           
           ### Download
-          - **Windows**: `GestorNominas.exe` (ready to run)
+          - **Windows**: Download `GestorNominas.exe`
           
           ### Installation
-          1. Download `GestorNominas.exe`
-          2. Run the executable
+          1. Download the executable
+          2. Run directly - no installation needed
           3. Configure email settings on first run
           
-          ### Requirements
-          - Windows 10/11
-          - No additional software needed
+          ### System Requirements
+          - Windows 10/11 (64-bit)
+          - No additional dependencies required
         draft: false
         prerelease: false
       env:
