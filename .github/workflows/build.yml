@@ -1,6 +1,9 @@
-name: Build Windows EXE
+name: Build and Release
 
 on:
+  push:
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
 
 jobs:
@@ -14,15 +17,41 @@ jobs:
       with:
         python-version: '3.9'
     
-    - name: Install deps and build
+    - name: Install dependencies and build EXE
       run: |
-        cd Nominas_Dinanlag_Group
-        pip install -r requirements.txt
+        cd sistema_nominas
+        pip install -r ../requirements.txt
         pip install pyinstaller
-        pyinstaller --onefile --windowed --name EnviarNominas main.py
+        pyinstaller --onefile --windowed --name GestorNominas main.py
     
-    - name: Upload EXE
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: sistema_nominas/dist/GestorNominas.exe
+        name: Release ${{ github.ref_name }}
+        body: |
+          ## Gestor Nominas ${{ github.ref_name }}
+          
+          ### Download
+          - **Windows**: `GestorNominas.exe` (ready to run)
+          
+          ### Installation
+          1. Download `GestorNominas.exe`
+          2. Run the executable
+          3. Configure email settings on first run
+          
+          ### Requirements
+          - Windows 10/11
+          - No additional software needed
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Upload Artifact (for manual builds)
+      if: github.event_name == 'workflow_dispatch'
       uses: actions/upload-artifact@v4
       with:
-        name: EnviarNominas-EXE
-        path: dist/EnviarNominas.exe
+        name: GestorNominas-EXE
+        path: sistema_nominas/dist/GestorNominas.exe

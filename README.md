@@ -16,11 +16,8 @@ Processes employee payrolls from PDF documents and sends them via email. Feature
 - **Encrypted Storage**: Secure password storage with optional encryption
 
 ### User Interface
-- Windows-style interface
 - Real-time progress tracking
-- Error reporting with recommendations
 - Context-sensitive tooltips
-- Cross-platform support (Windows, macOS, Linux)
 
 ### Reporting
 - Excel reports with formatting
@@ -81,7 +78,7 @@ No additional system packages required. Audio feedback uses built-in system soun
 1. **Clone the repository**:
    ```bash
    git clone <repository-url>
-   cd payroll-system
+   cd GestorNominas
    ```
 
 2. **Install dependencies**:
@@ -161,11 +158,6 @@ nominas_YYYY_MM/
 
 ### Common Issues
 
-**Application won't start**:
-- Run `python sistema_nominas/diagnostico.py` for system diagnostics
-- Verify all dependencies are installed
-- Check Python version compatibility
-
 **Email sending fails**:
 - Verify SMTP settings and credentials
 - Check firewall and antivirus settings
@@ -180,19 +172,6 @@ nominas_YYYY_MM/
 - Install tkinter: `sudo apt-get install python3-tk`
 - Install PIL support: `sudo apt-get install python3-pil.imagetk`
 - Check audio system for sound notifications
-
-### Diagnostic Tools
-
-Run the built-in diagnostic script:
-```bash
-python sistema_nominas/diagnostico.py
-```
-
-This will check:
-- Python version compatibility
-- Required library availability
-- System-specific components
-- Audio system functionality
 
 ## Security Considerations
 
