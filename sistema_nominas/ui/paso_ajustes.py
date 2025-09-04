@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import threading
 import smtplib
+import webbrowser
 from logic.settings import save_settings
 from logic.formato_archivos import generar_ejemplo_archivo
 
@@ -173,23 +174,58 @@ class PasoAjustes(tk.Frame):
         self.show_password = tk.BooleanVar()
         toggle_btn = tk.Button(password_frame, text="👁", command=self._toggle_password,
                               font=("MS Sans Serif", 10), width=2, relief="raised", bd=1)
-        toggle_btn.pack(side="left", padx=(20, 0))
+        toggle_btn.pack(side="left", padx=(5, 0))
         
-        cred_group.grid_columnconfigure(1, weight=1)
+        # Botón de ayuda para credenciales
+        help_btn_credenciales = tk.Button(password_frame, text="?", 
+                                        font=("MS Sans Serif", 8), width=2,
+                                        relief="raised", bd=2)
+        help_btn_credenciales.pack(side="left", padx=(5, 0))
         
-        # Test de conexión
-        test_frame = tk.Frame(cred_group, bg="#f0f0f0")
-        test_frame.grid(row=2, column=0, columnspan=3, pady=(10, 0), sticky="ew")
+        # Tooltip con información sobre cómo obtener credenciales
+        credenciales_tooltip = """¿Dónde obtener las credenciales?
+
+Para Gmail:
+1. Ve a tu cuenta de Google
+2. Seguridad → Verificación en 2 pasos (debe estar activada)
+3. Contraseñas de aplicaciones
+4. Selecciona "Correo" → "Otro"
+5. Escribe "Sistema Nóminas"
+6. Usa la contraseña generada (16 caracteres)
+
+🔗 Acceso directo Gmail: myaccount.google.com/security
+
+Para Outlook/Hotmail:
+1. Inicia sesión en outlook.com
+2. Configuración → Ver toda la configuración
+3. Correo → Sincronizar correo
+4. Contraseñas de aplicación → Crear contraseña
+5. Usa la contraseña generada
+
+🔗 Acceso directo Outlook: account.microsoft.com/security
+
+¡NUNCA uses tu contraseña personal del email!"""
+        ToolTipButton(help_btn_credenciales, credenciales_tooltip)
         
+        # Link directo a Gmail - texto azul como hiperlink
+        gmail_link = tk.Label(password_frame, text="Gmail →", 
+                             font=("MS Sans Serif", 8, "underline"), 
+                             fg="#0066cc", bg="#f0f0f0", cursor="hand2")
+        gmail_link.pack(side="left", padx=(10, 0))
+        gmail_link.bind("<Button-1>", self._abrir_gmail_security)
+        
+        # Test de conexión - en la misma línea que la contraseña, a la derecha
         self.test_btn = tk.Button(
-            test_frame, text="Probar Conexión",
+            cred_group, text="Probar Conexión",
             command=self._test_smtp_connection,
             font=("MS Sans Serif", 8), relief="raised",
             bd=2, padx=15, pady=6)
-        self.test_btn.pack(side="left", padx=(12, 0))
+        self.test_btn.grid(row=1, column=2, sticky="e", pady=8, padx=(20, 12))
         
-        self.test_status = tk.Label(test_frame, text="", font=("MS Sans Serif", 8), bg="#f0f0f0")
-        self.test_status.pack(side="left", padx=(15, 0))
+        self.test_status = tk.Label(cred_group, text="", font=("MS Sans Serif", 8), bg="#f0f0f0")
+        self.test_status.grid(row=2, column=2, sticky="e", pady=(5, 8), padx=(20, 12))
+        
+        cred_group.grid_columnconfigure(1, weight=1)
         
         # Plantilla de Email
         template_group = tk.LabelFrame(
@@ -516,6 +552,15 @@ Resultado: JUAN_GARCIA_Nomina_septiembre_2025.pdf"""
             'Formato', 'archivo_nomina', self.formato_archivo.get())
         self.controller.config.set(
             'PDF', 'password_autor', self.pdf_password_entry.get())
+
+    def _abrir_gmail_security(self, event=None):
+        """Abre la página de seguridad de Gmail en el navegador."""
+        try:
+            webbrowser.open("https://myaccount.google.com/security")
+        except Exception as e:
+            messagebox.showerror(
+                "Error", f"No se pudo abrir el navegador: {e}",
+                parent=self)
 
     def _cancelar(self):
         self.controller.mostrar_frame("Paso1")
