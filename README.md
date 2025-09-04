@@ -226,21 +226,6 @@ sistema_nominas/
 └── diagnostico.py         # System diagnostic tool
 ```
 
-## Development Standards
-
-- Professional English comments and documentation
-- Comprehensive error handling with user-friendly messages
-- Modular design with clear separation of concerns
-- Type hints and docstrings for all public interfaces
-- Logging integration throughout all modules
-
-## Support
-
-For technical support or bug reports, please provide:
-- Complete diagnostic output (`python sistema_nominas/diagnostico.py`)
-- Log files from the `logs/` directory
-- Detailed description of the issue
-- System information (OS, Python version)
 
 ## License
 
