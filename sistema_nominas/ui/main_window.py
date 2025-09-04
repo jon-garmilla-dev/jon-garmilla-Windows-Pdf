@@ -37,15 +37,32 @@ class GestorNominasApp(tk.Tk):
             "email": tk.StringVar()
         }
         self.tareas_verificacion = []
+        
+        # Control de navegación secuencial
+        self.paso_actual = "Paso1"
 
         self._crear_widgets()
-        self.mostrar_frame("Paso1")
+        self.mostrar_frame("Paso1", forzar=True)  # Forzar mostrar Paso1 al inicio
+        # Asegurar estilos correctos al inicio
+        self._actualizar_estilos_pasos()
 
         # Manejar el cierre de la ventana
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
         
         # Ocultar splash cuando la app esté completamente cargada
         self.after_idle(self._hide_splash_show_main)
+        
+    def ir_a_paso_siguiente(self, destino):
+        """Navega al paso siguiente usando los botones Siguiente/Anterior."""
+        # Permitir navegación por botones independientemente de las reglas del panel lateral
+        self.paso_actual = destino
+        self._actualizar_estilos_pasos()
+        
+        if destino == "Paso3":
+            self.event_generate("<<ShowPaso3>>")
+        
+        frame = self.frames[destino]
+        frame.tkraise()
 
     def center_window(self):
         """Centra la ventana en la pantalla principal."""
@@ -78,12 +95,11 @@ class GestorNominasApp(tk.Tk):
         
         elapsed_time = time.time() - self._splash_start_time
         
-        # Tiempo mínimo para que se vea profesional (1 segundo)
-        # pero no más de 3 segundos para evitar frustración
+        # Tiempo mínimo para que se vea el splash (1 segundo)  
         min_splash_time = 1.0
         
         if elapsed_time < min_splash_time:
-            # Esperar un poco más para que se vea profesional
+            # Esperar el tiempo necesario para completar el tiempo mínimo
             remaining_time = int((min_splash_time - elapsed_time) * 1000)
             self.after(remaining_time, self._actually_hide_splash)
         else:
@@ -236,30 +252,79 @@ class GestorNominasApp(tk.Tk):
         if current_bg != "#316ac5":  # Si no está seleccionado
             widget.config(bg="#e8e8e8", cursor="")
 
-    def mostrar_frame(self, page_name):
+    def mostrar_frame(self, page_name, forzar=False):
         """Muestra un frame y resalta el paso actual con estilo Windows."""
-        # Validar si se puede acceder al paso
-        if not self._puede_acceder_paso(page_name):
+        # Validar navegación secuencial estricta (excepto si se fuerza)
+        if not forzar and not self._puede_navegar_a_paso(page_name):
             return
+        
+        # Actualizar paso actual
+        self.paso_actual = page_name
             
         if page_name == "Paso3":
             self.event_generate("<<ShowPaso3>>")
 
-        for name, label in self.pasos_labels.items():
-            is_active = (name == page_name)
-            if is_active:
-                # Estilo seleccionado estilo Windows
-                label.config(
-                    font=("MS Sans Serif", 9, "bold"),
-                    bg="#316ac5", fg="#ffffff")
-            else:
-                # Estilo normal
-                label.config(
-                    font=("MS Sans Serif", 9, "normal"),
-                    bg="#e8e8e8", fg="#000000")
+        # Actualizar estilos visuales de todos los pasos
+        self._actualizar_estilos_pasos()
         
         frame = self.frames[page_name]
         frame.tkraise()
+    
+    def _puede_navegar_a_paso(self, destino):
+        """Determina si se puede navegar al paso destino según las reglas de seguridad."""
+        actual = self.paso_actual
+        
+        # NO permitir hacer clic en el mismo paso - es redundante
+        if actual == destino:
+            return False
+            
+        # Reglas de navegación secuencial estricta:
+        if actual == "Paso1":
+            # Desde Paso1 solo puedes ir a PasoAjustes, no a ti mismo
+            return destino in ["PasoAjustes"]
+            
+        elif actual == "Paso2":
+            # Desde Paso2 solo puedes ir a Paso1 (atrás)
+            return destino in ["Paso1"]
+            
+        elif actual == "Paso3":
+            # Desde Paso3 solo puedes ir a Paso2 (atrás)
+            return destino in ["Paso2"]
+            
+        elif actual == "PasoAjustes":
+            # Desde Configuración solo puedes volver a Paso1
+            return destino in ["Paso1"]
+            
+        elif actual == "PasoCompletado":
+            # Desde Completado puedes ir a cualquier lado (reiniciar proceso)
+            return True
+            
+        return False
+    
+    def _actualizar_estilos_pasos(self):
+        """Actualiza los estilos visuales de todos los pasos según el estado actual."""
+        for name, label in self.pasos_labels.items():
+            puede_navegar = self._puede_navegar_a_paso(name)
+            is_active = (name == self.paso_actual)
+            
+            if is_active:
+                # Paso actual - azul activo
+                label.config(
+                    font=("MS Sans Serif", 9, "bold"),
+                    bg="#316ac5", fg="#ffffff",
+                    cursor="hand2")
+            elif puede_navegar:
+                # Pasos accesibles - normal
+                label.config(
+                    font=("MS Sans Serif", 9, "normal"),
+                    bg="#e8e8e8", fg="#000000",
+                    cursor="hand2")
+            else:
+                # Pasos bloqueados - gris deshabilitado
+                label.config(
+                    font=("MS Sans Serif", 9, "normal"),
+                    bg="#e8e8e8", fg="#808080",
+                    cursor="")
     
     def bloquear_navegacion_lateral(self):
         """Bloquea la navegación del panel lateral durante envío."""

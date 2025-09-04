@@ -594,4 +594,4 @@ Resultado: JUAN_GARCIA_Nomina_septiembre_2025.pdf"""
                 parent=self)
 
     def _cancelar(self):
-        self.controller.mostrar_frame("Paso1")
+        self.controller.ir_a_paso_siguiente("Paso1")

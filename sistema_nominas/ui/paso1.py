@@ -528,4 +528,4 @@ class Paso1(tk.Frame):
         print(f"[DEBUG] Tareas creadas: {len(self.controller.tareas_verificacion) if self.controller.tareas_verificacion else 0}")
         
         self.controller.frames["Paso2"].actualizar_tabla()
-        self.controller.mostrar_frame("Paso2")
+        self.controller.ir_a_paso_siguiente("Paso2")

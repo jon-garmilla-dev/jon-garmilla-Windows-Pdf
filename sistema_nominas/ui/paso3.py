@@ -132,7 +132,7 @@ class Paso3(tk.Frame):
             self.detener_envio()
         
         # Navegar al paso anterior
-        self.controller.mostrar_frame("Paso2")
+        self.controller.ir_a_paso_siguiente("Paso2")
     
     def bloquear_navegacion(self):
         """Bloquea la navegación durante el envío."""
@@ -337,7 +337,7 @@ class Paso3(tk.Frame):
         )
         
         # Cambiar a la página de completado
-        self.controller.mostrar_frame("PasoCompletado")
+        self.controller.ir_a_paso_siguiente("PasoCompletado")
 
     def procesar_cola_ui(self):
         try:

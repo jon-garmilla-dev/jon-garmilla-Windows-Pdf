@@ -311,7 +311,7 @@ los archivos originales."""
         self.btn_anterior = tk.Button(
             buttons_container, text="< Anterior",
             font=("MS Sans Serif", 8), width=12, height=2,
-            command=lambda: self.controller.mostrar_frame("Paso1"),
+            command=lambda: self.controller.ir_a_paso_siguiente("Paso1"),
             relief="raised", bd=2, bg="#e0e0e0"
         )
         self.btn_anterior.pack(side="left", padx=(0, 8))
@@ -1001,4 +1001,4 @@ los archivos originales."""
                 if correcciones.get("status"):
                     tarea["status"] = "[OK]"
         
-        self.controller.mostrar_frame("Paso3")
+        self.controller.ir_a_paso_siguiente("Paso3")
