@@ -36,7 +36,7 @@ class ToolTipButton:
         label = tk.Label(
             tw, text=self.text, justify=tk.LEFT,
             background="#ffffe0", relief=tk.SOLID, borderwidth=1,
-            font=("MS Sans Serif", 8, "normal"), wraplength=300,
+            font=("Segoe UI", 9, "normal"), wraplength=300,
             padx=8, pady=6)
         label.pack()
         
@@ -72,7 +72,7 @@ class PasoAjustes(tk.Frame):
         tk.Label(
             titulo_frame,
             text="Configuración del Sistema",
-            font=("MS Sans Serif", 14, "bold"),
+            font=("Segoe UI", 16, "bold"),
             bg="#f0f0f0",
             fg="#000000").pack(anchor="w")
 
@@ -113,16 +113,16 @@ class PasoAjustes(tk.Frame):
         # Configuración SMTP
         smtp_group = tk.LabelFrame(
             frame_email, text=" Configuración del Servidor SMTP ",
-            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0", fg="#000000",
+            font=("Segoe UI", 9, "bold"), bg="#f0f0f0", fg="#000000",
             relief="groove", bd=2
         )
         smtp_group.pack(fill="x", padx=10, pady=(10, 0))
         
         # Servidor SMTP
-        tk.Label(smtp_group, text="Servidor SMTP:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+        tk.Label(smtp_group, text="Servidor SMTP:", font=("Segoe UI", 9), bg="#f0f0f0").grid(
             row=0, column=0, sticky="w", pady=8, padx=12)
         
-        self.servidor_entry = tk.Entry(smtp_group, width=25, font=("MS Sans Serif", 8))
+        self.servidor_entry = tk.Entry(smtp_group, width=25, font=("Segoe UI", 9))
         self.servidor_entry.grid(row=0, column=1, sticky="w", pady=8, padx=(0, 20))
         self.servidor_entry.insert(
             0,
@@ -130,16 +130,16 @@ class PasoAjustes(tk.Frame):
                 'SMTP', 'servidor', fallback='smtp.gmail.com'))
         
         # Puerto
-        tk.Label(smtp_group, text="Puerto:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+        tk.Label(smtp_group, text="Puerto:", font=("Segoe UI", 9), bg="#f0f0f0").grid(
             row=0, column=2, sticky="w", pady=8, padx=(0, 10))
         
-        self.puerto_entry = tk.Entry(smtp_group, width=8, font=("MS Sans Serif", 8))
+        self.puerto_entry = tk.Entry(smtp_group, width=8, font=("Segoe UI", 9))
         self.puerto_entry.grid(row=0, column=3, sticky="w", pady=8, padx=(0, 10))
         self.puerto_entry.insert(0, self.controller.config.get('SMTP', 'puerto', fallback='587'))
         
         # Botón de ayuda para SMTP - justo después del puerto
         help_btn_smtp = tk.Button(smtp_group, text="?", 
-                                font=("MS Sans Serif", 8), width=2,
+                                font=("Segoe UI", 9), width=2,
                                 relief="raised", bd=2)
         help_btn_smtp.grid(row=0, column=4, sticky="w", pady=8, padx=(5, 0))
         
@@ -159,38 +159,38 @@ No modificar a menos que sea necesario."""
         # Credenciales
         cred_group = tk.LabelFrame(
             frame_email, text=" Credenciales de Acceso ",
-            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0", fg="#000000",
+            font=("Segoe UI", 9, "bold"), bg="#f0f0f0", fg="#000000",
             relief="groove", bd=2
         )
         cred_group.pack(fill="x", padx=10, pady=(15, 0))
         cred_group.configure(bg="#f0f0f0")
         
         # Email
-        tk.Label(cred_group, text="Email:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+        tk.Label(cred_group, text="Email:", font=("Segoe UI", 9), bg="#f0f0f0").grid(
             row=0, column=0, sticky="w", pady=8, padx=12)
         
-        self.email_entry = tk.Entry(cred_group, width=40, font=("MS Sans Serif", 8))
+        self.email_entry = tk.Entry(cred_group, width=40, font=("Segoe UI", 9))
         self.email_entry.grid(
             row=0, column=1, sticky="ew", pady=8, padx=(0, 12), columnspan=2)
         self.email_entry.insert(
             0, self.controller.config.get('Email', 'email_origen', fallback=''))
         
         # Contraseña
-        tk.Label(cred_group, text="Contraseña:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+        tk.Label(cred_group, text="Contraseña:", font=("Segoe UI", 9), bg="#f0f0f0").grid(
             row=1, column=0, sticky="w", pady=8, padx=12)
         
         # Frame para contraseña + botón ojo
         password_frame = tk.Frame(cred_group, bg="#f0f0f0")
         password_frame.grid(row=1, column=1, sticky="w", pady=8, padx=(0, 10))
         
-        self.password_entry = tk.Entry(password_frame, width=20, font=("MS Sans Serif", 8), show="*")
+        self.password_entry = tk.Entry(password_frame, width=20, font=("Segoe UI", 9), show="*")
         self.password_entry.pack(side="left")
         self.password_entry.insert(
             0, self.controller.config.get('Email', 'password', fallback=''))
         
         self.show_password = tk.BooleanVar()
-        toggle_btn = tk.Button(password_frame, text="👁", command=self._toggle_password,
-                              font=("MS Sans Serif", 10), width=2, relief="raised", bd=1)
+        toggle_btn = tk.Button(password_frame, text="\U0001F441", command=self._toggle_password,
+                              font=("Segoe UI", 12), width=2, relief="raised", bd=1)
         toggle_btn.pack(side="left", padx=(5, 0))
         
         # Botón de ayuda para credenciales
@@ -226,7 +226,7 @@ Para Outlook/Hotmail:
         
         # Link directo a Gmail - texto azul como hiperlink
         gmail_link = tk.Label(password_frame, text="Gmail →", 
-                             font=("MS Sans Serif", 8, "underline"), 
+                             font=("Segoe UI", 9, "underline"), 
                              fg="#0066cc", bg="#f0f0f0", cursor="hand2")
         gmail_link.pack(side="left", padx=(10, 0))
         gmail_link.bind("<Button-1>", self._abrir_gmail_security)
@@ -235,11 +235,11 @@ Para Outlook/Hotmail:
         self.test_btn = tk.Button(
             cred_group, text="Probar Conexión",
             command=self._test_smtp_connection,
-            font=("MS Sans Serif", 8), relief="raised",
+            font=("Segoe UI", 9), relief="raised",
             bd=2, padx=15, pady=6)
         self.test_btn.grid(row=1, column=2, sticky="e", pady=8, padx=(20, 12))
         
-        self.test_status = tk.Label(cred_group, text="", font=("MS Sans Serif", 8), bg="#f0f0f0")
+        self.test_status = tk.Label(cred_group, text="", font=("Segoe UI", 9), bg="#f0f0f0")
         self.test_status.grid(row=2, column=2, sticky="e", pady=(5, 8), padx=(20, 12))
         
         cred_group.grid_columnconfigure(1, weight=1)
@@ -261,7 +261,7 @@ Para Outlook/Hotmail:
         
         # Botón de ayuda para asunto - mismo estilo que el botón Guardar
         help_btn_asunto = tk.Button(asunto_label_frame, text="?", 
-                                  font=("MS Sans Serif", 8), width=2,
+                                  font=("Segoe UI", 9), width=2,
                                   relief="raised", bd=2)
         help_btn_asunto.pack(side="left", padx=(10, 0))
         
@@ -295,7 +295,7 @@ Resultado: Estimado/a Juan García López..."""
         
         # Botón de ayuda para mensaje - mismo estilo que el botón Guardar
         help_btn_mensaje = tk.Button(mensaje_label_frame, text="?", 
-                                   font=("MS Sans Serif", 8), width=2,
+                                   font=("Segoe UI", 9), width=2,
                                    relief="raised", bd=2)
         help_btn_mensaje.pack(side="left", padx=(10, 0))
         
@@ -325,13 +325,13 @@ Departamento de Recursos Humanos''')
         # Configuración Básica
         basico_group = tk.LabelFrame(
             frame_general, text=" Configuración Básica ",
-            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0",
+            font=("Segoe UI", 9, "bold"), bg="#f0f0f0",
             fg="#000000", relief="groove", bd=2)
         basico_group.pack(fill="x", padx=10, pady=(10, 0))
         basico_group.configure(bg="#f0f0f0")
         
         # Pausa entre emails (simplificado)
-        tk.Label(basico_group, text="Pausa entre emails:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+        tk.Label(basico_group, text="Pausa entre emails:", font=("Segoe UI", 9), bg="#f0f0f0").grid(
             row=0, column=0, sticky="w", pady=8, padx=12)
         
         self.delay_var = tk.StringVar(
@@ -340,27 +340,27 @@ Departamento de Recursos Humanos''')
         delay_spin = tk.Spinbox(
             basico_group, from_=0.5, to=5.0, increment=0.5,
             width=10, textvariable=self.delay_var,
-            font=("MS Sans Serif", 8))
+            font=("Segoe UI", 9))
         delay_spin.grid(row=0, column=1, sticky="w", pady=8, padx=(0, 10))
-        tk.Label(basico_group, text="segundos", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+        tk.Label(basico_group, text="segundos", font=("Segoe UI", 9), bg="#f0f0f0").grid(
             row=0, column=2, sticky="w", pady=8)
         
         # Contraseña de PDFs (movido desde Email)
-        tk.Label(basico_group, text="Contraseña para editar PDFs:", font=("MS Sans Serif", 8), bg="#f0f0f0").grid(
+        tk.Label(basico_group, text="Contraseña para editar PDFs:", font=("Segoe UI", 9), bg="#f0f0f0").grid(
             row=1, column=0, sticky="w", pady=8, padx=12)
         
         # Frame para contraseña PDF + botón ojo
         pdf_password_frame = tk.Frame(basico_group, bg="#f0f0f0")
         pdf_password_frame.grid(row=1, column=1, sticky="w", pady=8, padx=(0, 10))
         
-        self.pdf_password_entry = tk.Entry(pdf_password_frame, width=15, font=("MS Sans Serif", 8), show="*")
+        self.pdf_password_entry = tk.Entry(pdf_password_frame, width=15, font=("Segoe UI", 9), show="*")
         self.pdf_password_entry.pack(side="left")
         self.pdf_password_entry.insert(
             0, self.controller.config.get('PDF', 'password_autor', fallback=''))
         
         self.show_pdf_password = tk.BooleanVar()
-        pdf_toggle_btn = tk.Button(pdf_password_frame, text="👁", command=self._toggle_pdf_password,
-                                  font=("MS Sans Serif", 10), width=2, relief="raised", bd=1)
+        pdf_toggle_btn = tk.Button(pdf_password_frame, text="\U0001F441", command=self._toggle_pdf_password,
+                                  font=("Segoe UI", 12), width=2, relief="raised", bd=1)
         pdf_toggle_btn.pack(side="left", padx=(5, 0))
         
         # Botón de ayuda para contraseña PDF
@@ -380,7 +380,7 @@ Departamento de Recursos Humanos''')
         # Configuración de Carpetas y Archivos
         carpetas_group = tk.LabelFrame(
             frame_general, text=" Configuración de Carpetas y Archivos ",
-            font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0",
+            font=("Segoe UI", 9, "bold"), bg="#f0f0f0",
             fg="#000000", relief="groove", bd=2)
         carpetas_group.pack(fill="x", padx=10, pady=(15, 0))
         carpetas_group.configure(bg="#f0f0f0")
@@ -397,11 +397,11 @@ Departamento de Recursos Humanos''')
         
         # Campo de texto y botón examinar estilo Windows (igual que Paso1)
         self.carpeta_entry = tk.Entry(selector_frame, textvariable=self.carpeta_salida, 
-                                    font=("MS Sans Serif", 8), state="readonly")
+                                    font=("Segoe UI", 9), state="readonly")
         self.carpeta_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
         
         browse_btn = tk.Button(selector_frame, text="Examinar...",
-                             font=("MS Sans Serif", 8), width=12,
+                             font=("Segoe UI", 9), width=12,
                              command=self._browse_output_folder,
                              relief="raised", bd=2, bg="#e0e0e0")
         browse_btn.grid(row=0, column=1)
@@ -410,7 +410,7 @@ Departamento de Recursos Humanos''')
         tk.Label(
             selector_frame,
             text="Seleccione dónde guardar las nóminas procesadas",
-            font=("MS Sans Serif", 8), bg="#f0f0f0",
+            font=("Segoe UI", 9), bg="#f0f0f0",
             fg="#000080", justify="left").grid(
                 row=1, column=0, columnspan=2, sticky="w", pady=(8, 0))
         
@@ -422,11 +422,11 @@ Departamento de Recursos Humanos''')
         formato_label_frame = tk.Frame(formato_frame, bg="#f0f0f0")
         formato_label_frame.pack(fill="x")
         
-        tk.Label(formato_label_frame, text="Formato de archivo:", font=("MS Sans Serif", 8), bg="#f0f0f0").pack(side="left", anchor="w")
+        tk.Label(formato_label_frame, text="Formato de archivo:", font=("Segoe UI", 9), bg="#f0f0f0").pack(side="left", anchor="w")
         
         # Botón de ayuda para formato de archivo - mismo estilo que el botón Guardar
         help_btn_formato = tk.Button(formato_label_frame, text="?", 
-                                   font=("MS Sans Serif", 8), width=2,
+                                   font=("Segoe UI", 9), width=2,
                                    relief="raised", bd=2)
         help_btn_formato.pack(side="left", padx=(10, 0))
         
@@ -451,12 +451,12 @@ Resultado: JUAN_GARCIA_Nomina_septiembre_2025.pdf"""
                 fallback='{nombre}_{apellidos}_Nomina_{mes}_{año}.pdf'))
         formato_entry = tk.Entry(
             formato_frame, textvariable=self.formato_archivo, width=60,
-            font=("MS Sans Serif", 8))
+            font=("Segoe UI", 9))
         formato_entry.pack(fill="x", pady=(5, 0))
         
         # Vista previa del formato
-        tk.Label(formato_frame, text="Vista previa:", font=("MS Sans Serif", 8, "bold"), bg="#f0f0f0").pack(anchor="w", pady=(10, 0))
-        self.preview_label = tk.Label(formato_frame, text="", font=("MS Sans Serif", 8, "italic"), 
+        tk.Label(formato_frame, text="Vista previa:", font=("Segoe UI", 9, "bold"), bg="#f0f0f0").pack(anchor="w", pady=(10, 0))
+        self.preview_label = tk.Label(formato_frame, text="", font=("Segoe UI", 9, "italic"), 
                                      bg="#f0f0f0", fg="#666666")
         self.preview_label.pack(anchor="w", pady=(2, 0))
         
@@ -473,7 +473,7 @@ Resultado: JUAN_GARCIA_Nomina_septiembre_2025.pdf"""
         guardar_btn = tk.Button(btn_frame,
                                text="Guardar",
                                command=self._guardar_configuracion,
-                               font=("MS Sans Serif", 8),
+                               font=("Segoe UI", 9),
                                relief="raised",
                                bd=2,
                                padx=20,
@@ -484,7 +484,7 @@ Resultado: JUAN_GARCIA_Nomina_septiembre_2025.pdf"""
         cancelar_btn = tk.Button(btn_frame,
                                 text="Cancelar",
                                 command=self._cancelar,
-                                font=("MS Sans Serif", 8),
+                                font=("Segoe UI", 9),
                                 relief="raised",
                                 bd=2,
                                 padx=20,
